@@ -1,0 +1,3 @@
+[submodule "FreeV2G"]
+	path = FreeV2G
+	url = https://github.com/Sevenstax/FreeV2G.git
