@@ -8,7 +8,19 @@ A **pure Python** EVerest module for WhiteBeet SLAC integration.
 
 ## Installation (2 minutes)
 
-### 1. Run the installer
+### Option 1: CMake Install (Recommended)
+```bash
+cd /home/amironenko/projects/imx93evk-rolec/workspace/whitebeet-slac-python
+cmake -B build -S .
+sudo cmake --build build --target install
+```
+
+This installs:
+- ✅ Module to `/usr/local/libexec/everest/modules/WhiteBeetSlac/`
+- ✅ Configs to `/usr/local/etc/everest/`
+- ✅ Sets executable permissions automatically
+
+### Option 2: Manual Install Script
 ```bash
 cd /home/amironenko/projects/imx93evk-rolec/workspace/whitebeet-slac-python
 ./install.sh
@@ -22,14 +34,14 @@ The installer will:
 
 ### 2. Configure
 ```bash
-# Edit config/config-basic.yaml
+# Edit /usr/local/etc/everest/config-basic.yaml
 # Update your WhiteBeet MAC address
-vim config/config-basic.yaml
+sudo vim /usr/local/etc/everest/config-basic.yaml
 ```
 
 ### 3. Run
 ```bash
-sudo manager --conf config/config-basic.yaml
+sudo manager --conf /usr/local/etc/everest/config-basic.yaml
 ```
 
 Done! 🎉

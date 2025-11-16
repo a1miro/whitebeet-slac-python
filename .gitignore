@@ -12,6 +12,21 @@ venv/
 ENV/
 .venv
 
+# Build directories
+build/
+build-*/
+install/
+dist/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+_CPack_Packages/
+install_manifest.txt
+
 # IDEs
 .vscode/
 .idea/

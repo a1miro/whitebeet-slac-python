@@ -33,6 +33,21 @@ sudo git clone https://github.com/Sevenstax/FreeV2G.git /opt/FreeV2G
 
 ### Installation
 
+#### Option 1: Using CMake (Recommended)
+
+```bash
+cmake -B build -S .
+sudo cmake --build build --target install
+```
+
+This installs:
+- Module to `/usr/local/libexec/everest/modules/WhiteBeetSlac/`
+- Configs to `/usr/local/etc/everest/`
+
+See [BUILD.md](BUILD.md) for detailed build instructions.
+
+#### Option 2: Manual Installation
+
 ```bash
 # Copy module to EVerest modules directory
 cd /home/amironenko/projects/imx93evk-rolec/workspace/whitebeet-slac-python
