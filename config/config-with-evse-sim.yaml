@@ -1,0 +1,94 @@
+# WhiteBeet SLAC with EvseManager Simulation Configuration
+# This configuration sets up a simulated EVSE with WhiteBeet SLAC module
+
+active_modules:
+  # Authentication modules
+  token_provider:
+    module: DummyTokenProvider
+    config_implementation:
+      main:
+        timeout: 10
+        token: DEADBEEF
+    connections:
+      evse:
+        - implementation_id: evse
+          module_id: evse_manager
+
+  token_validator:
+    module: DummyTokenValidator
+    config_implementation:
+      main:
+        sleep: 0.25
+        validation_reason: Token seems valid
+        validation_result: Accepted
+    connections: {}
+
+  auth:
+    module: Auth
+    config_module:
+      connection_timeout: 10
+      prioritize_authorization_over_stopping_transaction: true
+      selection_algorithm: FindFirst
+      ignore_connector_faults: true
+    connections:
+      evse_manager:
+        - implementation_id: evse
+          module_id: evse_manager
+      token_provider:
+        - implementation_id: main
+          module_id: token_provider
+      token_validator:
+        - implementation_id: main
+          module_id: token_validator
+
+  # EVSE Manager - Controls the charging session
+  evse_manager:
+    module: EvseManager
+    config_module:
+      connector_id: 1
+      evse_id: DE*PNX*E1234567*1
+      evse_id_din: 49A80737A45678
+      charge_mode: AC
+      ac_nominal_voltage: 230
+      max_current_import_A: 32
+      payment_enable_eim: true
+      payment_enable_contract: false
+      ac_hlc_enabled: true
+      ac_hlc_use_5percent: true
+      ac_enforce_hlc: false
+      has_ventilation: true
+      session_logging: true
+      session_logging_path: /tmp/everest-logs
+      disable_authentication: true  # For testing - starts charging immediately
+    connections:
+      bsp:
+        - implementation_id: board_support
+          module_id: yeti_simulator
+      slac:
+        - implementation_id: main
+          module_id: whitebeet_slac
+      powermeter_grid_side:
+        - implementation_id: powermeter
+          module_id: yeti_simulator
+      connector_lock:
+        - implementation_id: connector_lock
+          module_id: yeti_simulator
+
+  # WhiteBeet SLAC Module
+  whitebeet_slac:
+    module: WhiteBeetSlac
+    config_implementation:
+      main:
+        device: eth0
+        whitebeet_mac: "c4:93:00:34:a4:e2"
+        slac_timeout_ms: 50000
+        publish_mac_on_match_cnf: true
+
+  # Yeti Simulator - Simulates the board support (CP, relays, etc)
+  yeti_simulator:
+    module: YetiSimulator
+    config_module:
+      connector_id: 1
+    connections: {}
+
+settings: {}

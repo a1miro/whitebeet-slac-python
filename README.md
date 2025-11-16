@@ -67,21 +67,60 @@ export EV_MODULE_DIR=/home/amironenko/projects/imx93evk-rolec/workspace/whitebee
 
 ### Configuration
 
-Edit `config/config-basic.yaml`:
+The module provides several configuration files for different use cases:
+
+#### 1. Debug Auto-Enable (Easiest for Testing)
+`config/config-debug-auto.yaml` - Automatically enables SLAC on startup without needing EvseManager:
 
 ```yaml
 whitebeet_slac:
   module: WhiteBeetSlac
-  config_module:
-    device: eth0                          # Your Ethernet interface
-    whitebeet_mac: "c4:93:00:34:a4:e4"   # Your WhiteBeet MAC address
+  config_implementation:
+    main:
+      device: eth0
+      whitebeet_mac: "c4:93:00:34:a4:e2"
+      debug_auto_enable: true  # Auto-enable for testing
 ```
+
+**Use this for:** Quick hardware testing without full EVerest setup.
+
+#### 2. With EvseManager Simulation (Production-like)
+`config/config-with-evse-sim.yaml` - Full EVSE simulation with YetiSimulator:
+
+```yaml
+evse_manager:
+  module: EvseManager
+  connections:
+    slac:
+      - implementation_id: main
+        module_id: whitebeet_slac
+    # ... other connections
+```
+
+**Use this for:** Testing the full charging workflow with simulated CP states.
+
+#### 3. Standalone Testing (Manual Control)
+`config/config-standalone-test.yaml` - Minimal config for manual command testing:
+
+```bash
+# Enable SLAC manually:
+everest-cli call whitebeet_slac main reset '{"enable": true}'
+everest-cli call whitebeet_slac main enter_bcd '{}'
+```
+
+**Use this for:** Development and debugging with manual control.
 
 ### Run
 
 ```bash
-# Run EVerest with the Python module
-sudo manager --conf config/config-basic.yaml
+# Quick test (auto-enable):
+sudo manager --conf config/config-debug-auto.yaml
+
+# Full simulation with EvseManager:
+sudo manager --conf config/config-with-evse-sim.yaml
+
+# Manual control:
+sudo manager --conf config/config-standalone-test.yaml
 ```
 
 ## Module Structure

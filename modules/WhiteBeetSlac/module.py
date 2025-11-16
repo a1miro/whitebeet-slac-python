@@ -63,6 +63,7 @@ class WhiteBeetSlacModule(Module):
         self.whitebeet_mac = None
         self.slac_timeout_ms = None
         self.publish_mac_on_match_cnf = None
+        self.debug_auto_enable = None
         self.module_ref = None  # Will be set to Module instance for publishing
     
     def initialize(self):
@@ -109,11 +110,17 @@ class WhiteBeetSlacModule(Module):
             # Publish initial state
             self.module_ref.publish_variable("main", "state", "UNMATCHED")
             
+            # Debug auto-enable for testing without EvseManager
+            if self.debug_auto_enable:
+                print("[DEBUG] Auto-enabling SLAC and simulating BCD state for testing")
+                self.slac_enabled = True
+                self.in_bcd_state = True
+            
             # Main SLAC loop
             while not self.terminate.is_set():
                 if not self.slac_enabled or not self.in_bcd_state:
                     # Not enabled or not in charging state - wait
-                    time.sleep(0.1)
+                    time.sleep(1)
                     continue
                 
                 # Vehicle connected and SLAC enabled - start matching
@@ -246,17 +253,19 @@ def main():
     whitebeet_mac = setup.configs.implementations["main"].get("whitebeet_mac", "c4:93:00:34:a4:e4")
     slac_timeout_ms = setup.configs.implementations["main"].get("slac_timeout_ms", 50000)
     publish_mac = setup.configs.implementations["main"].get("publish_mac_on_match_cnf", True)
+    debug_auto_enable = setup.configs.implementations["main"].get("debug_auto_enable", False)
     
     # Store config in module
     module.device = device
     module.whitebeet_mac = whitebeet_mac
     module.slac_timeout_ms = slac_timeout_ms
     module.publish_mac_on_match_cnf = publish_mac
+    module.debug_auto_enable = debug_auto_enable
     module.module_ref = module  # Store reference for publishing
     
     # Register command handlers
     def handle_reset(args):
-        return module.cmd_reset(args["enable"])
+        return module.handle_reset(args["enable"])
     
     def handle_enter_bcd(args):
         return module.handle_enter_bcd()

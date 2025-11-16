@@ -20,6 +20,12 @@ provides:
         description: Publish the EV MAC address when matching is confirmed.
         type: boolean
         default: true
+      debug_auto_enable:
+        description: >-
+          Auto-enable SLAC and simulate BCD state on startup for testing without EvseManager.
+          WARNING: Only for debugging/testing. Set to false in production.
+        type: boolean
+        default: false
 metadata:
   base_license: https://opensource.org/licenses/Apache-2.0
   license: https://opensource.org/licenses/Apache-2.0
