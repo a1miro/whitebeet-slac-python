@@ -40,11 +40,34 @@ active_modules:
         - implementation_id: main
           module_id: token_validator
 
+  # Energy Manager - Required to allocate power to EVSE
+  energy_manager:
+    module: EnergyManager
+    config_module:
+      schedule_interval_duration: 60
+      schedule_total_duration: 600
+    connections:
+      energy_trunk:
+        - implementation_id: energy_grid
+          module_id: grid_connection_point
+
+  # Grid Connection Point - Simulates grid connection
+  grid_connection_point:
+    module: EnergyNode
+    config_module:
+      fuse_limit_A: 40
+      phase_count: 1  # Single phase to match EV request
+    connections:
+      energy_consumer:
+        - implementation_id: energy_grid
+          module_id: evse_manager
+
   # EVSE Manager - Orchestrates the complete charging session
   evse_manager:
     module: EvseManager
     config_module:
       connector_id: 1
+      connector_type: sType2  # AC Type 2 socket
       evse_id: DE*PNX*E1234567*1
       evse_id_din: 49A80737A45678
       charge_mode: AC
@@ -55,10 +78,10 @@ active_modules:
       payment_enable_contract: false
       ac_hlc_enabled: true
       ac_hlc_use_5percent: true
-      ac_enforce_hlc: false
+      ac_enforce_hlc: true  # Enforce HLC for ISO15118
       has_ventilation: true
       session_logging: true
-      session_logging_path: /tmp/everest-logs
+      session_logging_path: /var/logs/everest
       session_logging_xml: true
       disable_authentication: true  # Free service for testing
     connections:
@@ -84,8 +107,12 @@ active_modules:
     config_module:
       device: eth0  # Same ethernet interface as WhiteBeet SLAC
       supported_ISO15118_2: true
-      supported_DIN70121: false
-      tls_security: prohibit  # Disable TLS for easier testing
+      supported_DIN70121: false  # Disabled for AC mode
+      tls_security: allow  # Allow both TLS and non-TLS
+      verify_contract_cert_chain: false
+      auth_timeout_eim: 300
+      auth_timeout_pnc: 55
+      enable_sdp_server: true  # Enable SDP server for EV discovery
     connections:
       security:
         - module_id: evse_security
@@ -101,6 +128,7 @@ active_modules:
       csms_leaf_key_directory: /tmp/everest-certs/leaf/csms
       secc_leaf_cert_directory: /tmp/everest-certs/leaf/cso
       secc_leaf_key_directory: /tmp/everest-certs/leaf/cso
+      private_key_password: "123456"
     connections: {}
 
   # WhiteBeet SLAC Module - Establishes PLC data link
