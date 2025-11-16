@@ -7,7 +7,7 @@ active_modules:
     config_implementation:
       main:
         device: eth0
-        whitebeet_mac: "c4:93:00:34:a4:e4"
+        whitebeet_mac: "c4:93:00:34:a4:e2"
         slac_timeout_ms: 50000
         publish_mac_on_match_cnf: true
 

@@ -44,6 +44,7 @@ class WhiteBeetSlacModule(Module):
         self.whitebeet_mac = None
         self.slac_timeout_ms = None
         self.publish_mac_on_match_cnf = None
+        self.module_ref = None  # Will be set to Module instance for publishing
     
     def initialize(self):
         """Initialize the WhiteBeet hardware and start SLAC worker."""
@@ -87,7 +88,7 @@ class WhiteBeetSlacModule(Module):
             print("SLAC module ready")
             
             # Publish initial state
-            self.publish.state("UNMATCHED")
+            self.module_ref.publish_variable("main", "state", "UNMATCHED")
             
             # Main SLAC loop
             while not self.terminate.is_set():
@@ -98,7 +99,7 @@ class WhiteBeetSlacModule(Module):
                 
                 # Vehicle connected and SLAC enabled - start matching
                 print("Entering BCD state - starting SLAC matching")
-                self.publish.state("MATCHING")
+                self.module_ref.publish_variable("main", "state", "MATCHING")
                 
                 # Set duty cycle to 5% to signal EV to start SLAC
                 self.whitebeet.controlPilotSetDutyCycle(5)
@@ -113,13 +114,13 @@ class WhiteBeetSlacModule(Module):
                     
                     if matched:
                         print("✓ SLAC matching successful!")
-                        self.publish.state("MATCHED")
-                        self.publish.dlink_ready(True)
+                        self.module_ref.publish_variable("main", "state", "MATCHED")
+                        self.module_ref.publish_variable("main", "dlink_ready", True)
                         
                         # TODO: Extract and publish EV MAC if configured
                         # if self.publish_mac:
                         #     ev_mac = self._get_ev_mac()
-                        #     self.publish.ev_mac_address(ev_mac)
+                        #     self.module_ref.publish_variable("main", "ev_mac_address", ev_mac)
                         
                         # Stay matched until we leave BCD state
                         while self.in_bcd_state and not self.terminate.is_set():
@@ -127,14 +128,14 @@ class WhiteBeetSlacModule(Module):
                         
                         # Left BCD state - terminate link
                         print("Left BCD state - terminating SLAC link")
-                        self.publish.state("UNMATCHED")
-                        self.publish.dlink_ready(False)
+                        self.module_ref.publish_variable("main", "state", "UNMATCHED")
+                        self.module_ref.publish_variable("main", "dlink_ready", False)
                         
                         # Reset duty cycle to 100%
                         self.whitebeet.controlPilotSetDutyCycle(100)
                     else:
                         print("✗ SLAC matching failed or timed out")
-                        self.publish.state("UNMATCHED")
+                        self.module_ref.publish_variable("main", "state", "UNMATCHED")
                         self.publish.request_error_routine()
                         
                         # Wait before retry
@@ -142,12 +143,12 @@ class WhiteBeetSlacModule(Module):
                         
                 except TimeoutError as e:
                     print(f"SLAC matching timeout: {e}")
-                    self.publish.state("UNMATCHED")
+                    self.module_ref.publish_variable("main", "state", "UNMATCHED")
                     self.publish.request_error_routine()
                     time.sleep(2)
                 except Exception as e:
                     print(f"SLAC matching error: {e}")
-                    self.publish.state("UNMATCHED")
+                    self.module_ref.publish_variable("main", "state", "UNMATCHED")
                     self.publish.request_error_routine()
                     time.sleep(2)
             
@@ -172,10 +173,10 @@ class WhiteBeetSlacModule(Module):
         self.slac_enabled = enable
         
         if enable:
-            self.publish.state("MATCHING")
+            self.module_ref.publish_variable("main", "state", "MATCHING")
         else:
-            self.publish.state("UNMATCHED")
-            self.publish.dlink_ready(False)
+            self.module_ref.publish_variable("main", "state", "UNMATCHED")
+            self.module_ref.publish_variable("main", "dlink_ready", False)
     
     def handle_enter_bcd(self):
         """Signal that Control Pilot entered state B/C/D (vehicle connected)."""
@@ -191,14 +192,14 @@ class WhiteBeetSlacModule(Module):
         """Terminate the data link."""
         print("Data link terminate requested")
         self.in_bcd_state = False
-        self.publish.state("UNMATCHED")
-        self.publish.dlink_ready(False)
+        self.module_ref.publish_variable("main", "state", "UNMATCHED")
+        self.module_ref.publish_variable("main", "dlink_ready", False)
     
     def handle_dlink_error(self):
         """Handle data link error."""
         print("Data link error - restarting matching process")
-        self.publish.state("UNMATCHED")
-        self.publish.dlink_ready(False)
+        self.module_ref.publish_variable("main", "state", "UNMATCHED")
+        self.module_ref.publish_variable("main", "dlink_ready", False)
         # Worker thread will restart matching if still in BCD state
     
     def handle_dlink_pause(self):
@@ -232,6 +233,7 @@ def main():
     module.whitebeet_mac = whitebeet_mac
     module.slac_timeout_ms = slac_timeout_ms
     module.publish_mac_on_match_cnf = publish_mac
+    module.module_ref = module  # Store reference for publishing
     
     # Register command handlers
     def handle_reset(args):
