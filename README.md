@@ -123,6 +123,77 @@ sudo manager --conf config/config-with-evse-sim.yaml
 sudo manager --conf config/config-standalone-test.yaml
 ```
 
+## Charging Session Flow
+
+### Understanding the Complete Stack
+
+The SLAC module **only handles the data link layer**. A complete charging session requires:
+
+```
+1. SLAC Module (this module)
+   ↓ Establishes PLC communication link
+2. ISO15118 Module (EvseV2G)
+   ↓ Handles V2G protocol (SessionSetup, Authorization, etc.)
+3. EvseManager
+   ↓ Controls power delivery
+4. Charging starts!
+```
+
+### What Happens After "SLAC matching successful"?
+
+When you see "SLAC matching successful", the SLAC module has:
+- ✅ Established the PLC data link
+- ✅ Published `state = "MATCHED"`
+- ✅ Published `dlink_ready = True`
+
+**Next step:** The ISO15118 module (EvseV2G) should now start the V2G communication protocol. If charging doesn't start, check:
+
+1. **Is EvseV2G module running?** Check logs for ISO15118 messages
+2. **Is the HLC connection configured?** EvseManager must connect SLAC → ISO15118
+3. **Are certificates configured?** For secure charging (or use `tls_security: prohibit` for testing)
+
+### Complete Charging Configuration
+
+Use `config/config-complete-charging.yaml` for a full working setup:
+
+```bash
+# This includes: SLAC + ISO15118 + EvseManager + Auth
+sudo manager --conf config/config-complete-charging.yaml
+```
+
+This configuration includes:
+- **WhiteBeet SLAC** - PLC data link (this module)
+- **EvseV2G** - ISO15118-2 protocol handler
+- **EvseManager** - Session orchestration and power control
+- **YetiSimulator** - Simulated board support (CP, relays, power meter)
+- **Auth modules** - Free service for testing
+
+### Troubleshooting
+
+**Problem:** SLAC matches but charging doesn't start
+
+**Check:**
+```bash
+# 1. Verify ISO15118 module is loaded
+grep "EvseV2G" /tmp/everest-logs/*
+
+# 2. Check if HLC connection exists in config
+grep -A5 "hlc:" your-config.yaml
+
+# 3. Monitor V2G messages
+tail -f /tmp/everest-logs/*.xml
+```
+
+**Solution:** Ensure your config has the HLC module connected:
+```yaml
+evse_manager:
+  connections:
+    slac:
+      - module_id: whitebeet_slac
+    hlc:  # ← This is required!
+      - module_id: iso15118_charger
+```
+
 ## Module Structure
 
 ```

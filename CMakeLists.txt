@@ -43,7 +43,7 @@ install(
     FILES 
         config/config-basic.yaml
         config/config-full.yaml
-        config-debug-auto.yaml
+        config/config-debug-auto.yaml
         config/config-standalone-test.yaml
         config/config-with-evse-sim.yaml
     DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/everest

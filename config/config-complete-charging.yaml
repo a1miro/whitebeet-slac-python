@@ -1,8 +1,9 @@
-# WhiteBeet SLAC with EvseManager Simulation Configuration
-# This configuration sets up a simulated EVSE with WhiteBeet SLAC module
+# WhiteBeet SLAC with Full Charging Stack - Simple Test Configuration
+# Complete setup: SLAC → ISO15118 → Charging
+# Uses basic security (no TLS) for easier testing
 
 active_modules:
-  # Authentication modules
+  # Authentication - Allows free charging for testing
   token_provider:
     module: DummyTokenProvider
     config_implementation:
@@ -27,9 +28,7 @@ active_modules:
     module: Auth
     config_module:
       connection_timeout: 10
-      prioritize_authorization_over_stopping_transaction: true
       selection_algorithm: FindFirst
-      ignore_connector_faults: true
     connections:
       evse_manager:
         - implementation_id: evse
@@ -41,25 +40,50 @@ active_modules:
         - implementation_id: main
           module_id: token_validator
 
-  # EVSE Manager - Controls the charging session
+  # Energy Manager - Required to allocate power to EVSE
+  energy_manager:
+    module: EnergyManager
+    config_module:
+      schedule_interval_duration: 60
+      schedule_total_duration: 600
+    connections:
+      energy_trunk:
+        - implementation_id: energy_grid
+          module_id: grid_connection_point
+
+  # Grid Connection Point - Simulates grid connection
+  grid_connection_point:
+    module: EnergyNode
+    config_module:
+      fuse_limit_A: 40
+      phase_count: 1  # Single phase to match EV request
+    connections:
+      energy_consumer:
+        - implementation_id: energy_grid
+          module_id: evse_manager
+
+  # EVSE Manager - Orchestrates the complete charging session
   evse_manager:
     module: EvseManager
     config_module:
       connector_id: 1
+      connector_type: sType2  # AC Type 2 socket
       evse_id: DE*PNX*E1234567*1
       evse_id_din: 49A80737A45678
       charge_mode: AC
       ac_nominal_voltage: 230
       max_current_import_A: 32
+      max_current_export_A: 32
       payment_enable_eim: true
       payment_enable_contract: false
       ac_hlc_enabled: true
       ac_hlc_use_5percent: true
-      ac_enforce_hlc: false
+      ac_enforce_hlc: true  # Enforce HLC for ISO15118
       has_ventilation: true
       session_logging: true
-      session_logging_path: /tmp/everest-logs
-      disable_authentication: true  # For testing - starts charging immediately
+      session_logging_path: /var/logs/everest
+      session_logging_xml: true
+      disable_authentication: true  # Free service for testing
     connections:
       bsp:
         - implementation_id: board_support
@@ -77,20 +101,24 @@ active_modules:
         - implementation_id: connector_lock
           module_id: yeti_simulator
 
-  # ISO15118 Charger - Handles high-level charging communication
+  # ISO15118-2 Charger Module - Handles V2G communication after SLAC
   iso15118_charger:
     module: EvseV2G
     config_module:
-      device: eth0  # Same interface as SLAC
+      device: eth0  # Same ethernet interface as WhiteBeet SLAC
       supported_ISO15118_2: true
-      supported_DIN70121: false
-      tls_security: prohibit  # Disable TLS for testing
+      supported_DIN70121: false  # Disabled for AC mode
+      tls_security: allow  # Allow both TLS and non-TLS
+      verify_contract_cert_chain: false
+      auth_timeout_eim: 300
+      auth_timeout_pnc: 55
+      enable_sdp_server: true  # Enable SDP server for EV discovery
     connections:
       security:
         - module_id: evse_security
           implementation_id: main
 
-  # EvseSecurity - Required by EvseV2G
+  # EvseSecurity - Required by EvseV2G even when TLS is disabled
   evse_security:
     module: EvseSecurity
     config_module:
@@ -100,9 +128,10 @@ active_modules:
       csms_leaf_key_directory: /tmp/everest-certs/leaf/csms
       secc_leaf_cert_directory: /tmp/everest-certs/leaf/cso
       secc_leaf_key_directory: /tmp/everest-certs/leaf/cso
+      private_key_password: "123456"
     connections: {}
 
-  # WhiteBeet SLAC Module
+  # WhiteBeet SLAC Module - Establishes PLC data link
   whitebeet_slac:
     module: WhiteBeetSlac
     config_implementation:
@@ -111,8 +140,9 @@ active_modules:
         whitebeet_mac: "c4:93:00:34:a4:e2"
         slac_timeout_ms: 50000
         publish_mac_on_match_cnf: true
+        debug_auto_enable: true  # Auto-enable for testing
 
-  # Yeti Simulator - Simulates the board support (CP, relays, etc)
+  # Yeti Simulator - Simulates board support (CP states, relays, etc)
   yeti_simulator:
     module: YetiSimulator
     config_module:
