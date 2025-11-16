@@ -8,6 +8,20 @@ project(whitebeet-slac-python
 
 include(GNUInstallDirs)
 
+# FreeV2G installation path
+set(FREEV2G_INSTALL_PATH "${CMAKE_INSTALL_FULL_DATADIR}/FreeV2G" CACHE STRING "Installation path for FreeV2G library")
+
+# Install FreeV2G library
+install(
+    DIRECTORY FreeV2G/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/FreeV2G
+    FILES_MATCHING
+    PATTERN "*.py"
+    PATTERN "*.json"
+    PATTERN ".git" EXCLUDE
+    PATTERN ".github" EXCLUDE
+)
+
 # Install Python module
 install(
     DIRECTORY modules/WhiteBeetSlac
@@ -53,4 +67,5 @@ message(STATUS "  Version: ${PROJECT_VERSION}")
 message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "  Module directory: ${CMAKE_INSTALL_LIBEXECDIR}/everest/modules")
 message(STATUS "  Config directory: ${CMAKE_INSTALL_SYSCONFDIR}/everest")
+message(STATUS "  FreeV2G directory: ${FREEV2G_INSTALL_PATH}")
 message(STATUS "")

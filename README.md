@@ -24,18 +24,23 @@ This is a **pure Python** implementation of the WhiteBeet SLAC module. Unlike th
 sudo apt-get install python3 python3-pip
 sudo pip3 install scapy pylibpcap
 
-# Install FreeV2G
-sudo git clone https://github.com/Sevenstax/FreeV2G.git /opt/FreeV2G
-
 # Install EVerest (if not already done)
 # Follow EVerest installation guide
 ```
+
+**Note:** FreeV2G is now included as a git submodule and will be installed automatically with the module.
 
 ### Installation
 
 #### Option 1: Using CMake (Recommended)
 
 ```bash
+# Clone with submodules
+git clone --recurse-submodules https://github.com/a1miro/whitebeet-slac-python.git
+# Or if already cloned:
+git submodule update --init --recursive
+
+# Build and install
 cmake -B build -S .
 sudo cmake --build build --target install
 ```
@@ -43,6 +48,9 @@ sudo cmake --build build --target install
 This installs:
 - Module to `/usr/local/libexec/everest/modules/WhiteBeetSlac/`
 - Configs to `/usr/local/etc/everest/`
+- FreeV2G to `/usr/local/share/FreeV2G/`
+
+The module will automatically detect FreeV2G in standard locations.
 
 See [BUILD.md](BUILD.md) for detailed build instructions.
 

@@ -8,13 +8,32 @@ with WhiteBeet hardware through the FreeV2G Python library.
 """
 
 import sys
+import os
 import time
 import logging
 import signal
 from threading import Thread, Event
 
 # Add FreeV2G to Python path
-sys.path.insert(0, '/opt/FreeV2G')
+# Try multiple possible locations for FreeV2G
+FREEV2G_PATHS = [
+    os.environ.get('FREEV2G_PATH'),  # Environment variable override
+    '/usr/local/share/FreeV2G',       # Default install location
+    '/usr/share/FreeV2G',             # System install location
+    '/opt/FreeV2G',                   # Legacy location
+]
+
+freev2g_path = None
+for path in FREEV2G_PATHS:
+    if path and os.path.isdir(path):
+        freev2g_path = path
+        break
+
+if not freev2g_path:
+    raise ImportError(f"FreeV2G library not found. Searched paths: {[p for p in FREEV2G_PATHS if p]}")
+
+sys.path.insert(0, freev2g_path)
+print(f"[SLAC] Using FreeV2G from: {freev2g_path}")
 
 from Whitebeet import Whitebeet
 
