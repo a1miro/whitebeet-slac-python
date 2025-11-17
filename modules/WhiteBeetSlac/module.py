@@ -10,7 +10,6 @@ with WhiteBeet hardware through the FreeV2G Python library.
 import sys
 import os
 import time
-import logging
 import signal
 from threading import Thread, Event
 
@@ -20,26 +19,28 @@ FREEV2G_PATHS = [
     os.environ.get('FREEV2G_PATH'),  # Environment variable override
     '/usr/local/share/FreeV2G',       # Default install location
     '/usr/share/FreeV2G',             # System install location
-    '/opt/FreeV2G',                   # Legacy location
+    '/opt/FreeV2G'                    # Legacy location
 ]
+# Add local directory to search paths
+FREEV2G_PATHS.append(os.path.join(os.path.dirname(__file__), '../../FreeV2G'))
 
-freev2g_path = None
+FREEV2G_PATH = None
 for path in FREEV2G_PATHS:
     if path and os.path.isdir(path):
-        freev2g_path = path
+        FREEV2G_PATH = path
         break
 
-if not freev2g_path:
+if not FREEV2G_PATH:
     raise ImportError(f"FreeV2G library not found. Searched paths: {[p for p in FREEV2G_PATHS if p]}")
 
-sys.path.insert(0, freev2g_path)
-print(f"[SLAC] Using FreeV2G from: {freev2g_path}")
+sys.path.insert(0, FREEV2G_PATH)
 
 from Whitebeet import Whitebeet
 
 # EVerest module base
-from everest.framework import Module, RuntimeSession
+from everest.framework import Module, RuntimeSession, log
 
+log.info(f"[SLAC] Using FreeV2G from: {FREEV2G_PATH}")
 
 class WhiteBeetSlacModule(Module):
     """
@@ -68,7 +69,7 @@ class WhiteBeetSlacModule(Module):
     
     def initialize(self):
         """Initialize the WhiteBeet hardware and start SLAC worker."""
-        print(f"WhiteBeet SLAC module initialized (device: {self.device}, mac: {self.whitebeet_mac})")
+        log.info(f"WhiteBeet SLAC module initialized (device: {self.device}, mac: {self.whitebeet_mac})")
         
         # Start SLAC worker thread
         self.slac_thread = Thread(target=self._slac_worker, daemon=True)
@@ -90,29 +91,29 @@ class WhiteBeetSlacModule(Module):
         """Background thread that manages SLAC operations."""
         try:
             # Initialize WhiteBeet connection
-            print(f"Connecting to WhiteBeet on {self.device} (MAC: {self.whitebeet_mac})")
+            log.info(f"Connecting to WhiteBeet on {self.device} (MAC: {self.whitebeet_mac})")
             self.whitebeet = Whitebeet("ETH", self.device, self.whitebeet_mac)
-            print(f"WhiteBeet firmware version: {self.whitebeet.version}")
+            log.info(f"WhiteBeet firmware version: {self.whitebeet.version}")
             
             # Initialize Control Pilot for EVSE mode
-            print("Initializing Control Pilot in EVSE mode...")
+            log.info("Initializing Control Pilot in EVSE mode...")
             self.whitebeet.controlPilotSetMode(1)  # EVSE mode
             self.whitebeet.controlPilotSetDutyCycle(100)  # 100% duty cycle
             self.whitebeet.controlPilotStart()
-            print("Control Pilot initialized (mode: EVSE, duty cycle: 100%)")
+            log.info("Control Pilot initialized (mode: EVSE, duty cycle: 100%)")
             
             # Start SLAC module in EVSE mode
-            print("Starting SLAC module in EVSE mode...")
+            log.info("Starting SLAC module in EVSE mode...")
             self.whitebeet.slacStart(1)  # EVSE mode
             time.sleep(2)  # Wait for SLAC to be ready
-            print("SLAC module ready")
+            log.info("SLAC module ready")
             
             # Publish initial state
             self.module_ref.publish_variable("main", "state", "UNMATCHED")
             
             # Debug auto-enable for testing without EvseManager
             if self.debug_auto_enable:
-                print("[DEBUG] Auto-enabling SLAC and simulating BCD state for testing")
+                log.info("[DEBUG] Auto-enabling SLAC and simulating BCD state for testing")
                 self.slac_enabled = True
                 self.in_bcd_state = True
             
@@ -124,14 +125,14 @@ class WhiteBeetSlacModule(Module):
                     continue
                 
                 # Vehicle connected and SLAC enabled - start matching
-                print("Entering BCD state - starting SLAC matching")
+                log.info("Entering BCD state - starting SLAC matching")
                 self.module_ref.publish_variable("main", "state", "MATCHING")
                 
                 # Set duty cycle to 5% to signal EV to start SLAC
                 self.whitebeet.controlPilotSetDutyCycle(5)
                 
                 # Start SLAC matching
-                print("Starting SLAC matching...")
+                log.info("Starting SLAC matching...")
                 self.whitebeet.slacStartMatching()
                 
                 # Wait for SLAC to complete (blocking call with timeout)
@@ -139,7 +140,7 @@ class WhiteBeetSlacModule(Module):
                     matched = self.whitebeet.slacMatched()
                     
                     if matched:
-                        print("✓ SLAC matching successful!")
+                        log.info("✓ SLAC matching successful!")
                         self.module_ref.publish_variable("main", "state", "MATCHED")
                         self.module_ref.publish_variable("main", "dlink_ready", True)
                         
@@ -153,14 +154,14 @@ class WhiteBeetSlacModule(Module):
                             time.sleep(0.1)
                         
                         # Left BCD state - terminate link
-                        print("Left BCD state - terminating SLAC link")
+                        log.info("Left BCD state - terminating SLAC link")
                         self.module_ref.publish_variable("main", "state", "UNMATCHED")
                         self.module_ref.publish_variable("main", "dlink_ready", False)
                         
                         # Reset duty cycle to 100%
                         self.whitebeet.controlPilotSetDutyCycle(100)
                     else:
-                        print("✗ SLAC matching failed or timed out")
+                        log.info("✗ SLAC matching failed or timed out")
                         self.module_ref.publish_variable("main", "state", "UNMATCHED")
                         self.publish.request_error_routine()
                         
@@ -168,34 +169,34 @@ class WhiteBeetSlacModule(Module):
                         time.sleep(2)
                         
                 except TimeoutError as e:
-                    print(f"SLAC matching timeout: {e}")
+                    log.info(f"SLAC matching timeout: {e}")
                     self.module_ref.publish_variable("main", "state", "UNMATCHED")
                     self.publish.request_error_routine()
                     time.sleep(2)
                 except Exception as e:
-                    print(f"SLAC matching error: {e}")
+                    log.info(f"SLAC matching error: {e}")
                     self.module_ref.publish_variable("main", "state", "UNMATCHED")
                     self.publish.request_error_routine()
                     time.sleep(2)
             
         except Exception as e:
-            print(f"SLAC worker thread error: {e}", exc_info=True)
+            log.info(f"SLAC worker thread error: {e}", exc_info=True)
         finally:
             # Cleanup
             if self.whitebeet:
                 try:
-                    print("Stopping SLAC module...")
+                    log.info("Stopping SLAC module...")
                     self.whitebeet.slacStop()
                     self.whitebeet.controlPilotStop()
-                    print("SLAC module stopped")
+                    log.info("SLAC module stopped")
                 except Exception as e:
-                    print(f"Error during cleanup: {e}")
+                    log.info(f"Error during cleanup: {e}")
     
     # Command handlers (called by EVerest framework)
     
     def handle_reset(self, enable):
         """Reset SLAC module."""
-        print(f"SLAC reset requested (enable: {enable})")
+        log.info(f"SLAC reset requested (enable: {enable})")
         self.slac_enabled = enable
         
         if enable:
@@ -206,31 +207,31 @@ class WhiteBeetSlacModule(Module):
     
     def handle_enter_bcd(self):
         """Signal that Control Pilot entered state B/C/D (vehicle connected)."""
-        print("Entering BCD state (vehicle connected)")
+        log.info("Entering BCD state (vehicle connected)")
         self.in_bcd_state = True
     
     def handle_leave_bcd(self):
         """Signal that Control Pilot left state B/C/D (vehicle disconnected)."""
-        print("Leaving BCD state (vehicle disconnected)")
+        log.info("Leaving BCD state (vehicle disconnected)")
         self.in_bcd_state = False
     
     def handle_dlink_terminate(self):
         """Terminate the data link."""
-        print("Data link terminate requested")
+        log.info("Data link terminate requested")
         self.in_bcd_state = False
         self.module_ref.publish_variable("main", "state", "UNMATCHED")
         self.module_ref.publish_variable("main", "dlink_ready", False)
     
     def handle_dlink_error(self):
         """Handle data link error."""
-        print("Data link error - restarting matching process")
+        log.info("Data link error - restarting matching process")
         self.module_ref.publish_variable("main", "state", "UNMATCHED")
         self.module_ref.publish_variable("main", "dlink_ready", False)
         # Worker thread will restart matching if still in BCD state
     
     def handle_dlink_pause(self):
         """Request power saving mode while staying matched."""
-        print("Data link pause requested (power saving mode)")
+        log.info("Data link pause requested (power saving mode)")
         # WhiteBeet doesn't have a specific pause mode
         # Just log it for now
 
@@ -299,7 +300,7 @@ def main():
     running = [True]
     
     def signal_handler(signum, frame):
-        print("[SLAC] Received shutdown signal, exiting...")
+        log.info("[SLAC] Received shutdown signal, exiting...")
         running[0] = False
         module.terminate.set()
     
@@ -310,7 +311,7 @@ def main():
         while running[0]:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("[SLAC] Keyboard interrupt received, exiting...")
+        log.info("[SLAC] Keyboard interrupt received, exiting...")
     finally:
         module.cleanup()
 

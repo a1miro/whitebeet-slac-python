@@ -1,0 +1,35 @@
+description: WhiteBeet ISO15118 Charger using internal V2G implementation
+provides:
+  charger:
+    interface: ISO15118_charger
+    description: ISO15118 charger implementation using WhiteBeet's internal V2G stack
+    config:
+      device:
+        description: Ethernet device used for communication with WhiteBeet (e.g., eth0)
+        type: string
+        default: eth0
+      whitebeet_mac:
+        description: MAC address of the WhiteBeet device
+        type: string
+        default: "c4:93:00:34:a4:e4"
+      payment_enable_eim:
+        description: Enable External Identification Means (EIM) payment
+        type: boolean
+        default: true
+      payment_enable_contract:
+        description: Enable contract-based payment (PnC)
+        type: boolean
+        default: false
+      ac_nominal_voltage:
+        description: AC nominal voltage in volts
+        type: number
+        default: 230
+      free_service:
+        description: Offer free charging service
+        type: boolean
+        default: true
+metadata:
+  base_license: https://opensource.org/licenses/Apache-2.0
+  license: https://opensource.org/licenses/Apache-2.0
+  authors:
+    - Andrei Mironenko, Parallel Dynamic Ltd.

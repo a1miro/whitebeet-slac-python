@@ -22,19 +22,29 @@ install(
     PATTERN ".github" EXCLUDE
 )
 
-# Install Python module
+# Install Python modules
 install(
-    DIRECTORY modules/WhiteBeetSlac
+    DIRECTORY 
+        modules/WhiteBeetSlac
+        modules/WhiteBeetCharger
     DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/everest/modules
     FILES_MATCHING 
     PATTERN "*.py"
     PATTERN "*.yaml"
 )
 
-# Make the Python module executable
+# Make the Python modules executable
 install(
-    FILES modules/WhiteBeetSlac/module.py
+    FILES 
+        modules/WhiteBeetSlac/module.py
+        modules/WhiteBeetCharger/module.py
     DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/everest/modules/WhiteBeetSlac
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+)
+
+install(
+    FILES modules/WhiteBeetCharger/module.py
+    DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/everest/modules/WhiteBeetCharger
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
 

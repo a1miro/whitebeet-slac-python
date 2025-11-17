@@ -93,7 +93,7 @@ active_modules:
           module_id: whitebeet_slac
       hlc:
         - implementation_id: charger
-          module_id: iso15118_charger
+          module_id: whitebeet_charger
       powermeter_grid_side:
         - implementation_id: powermeter
           module_id: yeti_simulator
@@ -101,35 +101,17 @@ active_modules:
         - implementation_id: connector_lock
           module_id: yeti_simulator
 
-  # ISO15118-2 Charger Module - Handles V2G communication after SLAC
-  iso15118_charger:
-    module: EvseV2G
-    config_module:
-      device: eth0  # Same ethernet interface as WhiteBeet SLAC
-      supported_ISO15118_2: true
-      supported_DIN70121: false  # Disabled for AC mode
-      tls_security: allow  # Allow both TLS and non-TLS
-      verify_contract_cert_chain: false
-      auth_timeout_eim: 300
-      auth_timeout_pnc: 55
-      enable_sdp_server: true  # Enable SDP server for EV discovery
-    connections:
-      security:
-        - module_id: evse_security
-          implementation_id: main
-
-  # EvseSecurity - Required by EvseV2G even when TLS is disabled
-  evse_security:
-    module: EvseSecurity
-    config_module:
-      csms_ca_bundle: /tmp/everest-certs/ca/v2g/ca-bundle.pem
-      mf_ca_bundle: /tmp/everest-certs/ca/mf/ca-bundle.pem
-      csms_leaf_cert_directory: /tmp/everest-certs/leaf/csms
-      csms_leaf_key_directory: /tmp/everest-certs/leaf/csms
-      secc_leaf_cert_directory: /tmp/everest-certs/leaf/cso
-      secc_leaf_key_directory: /tmp/everest-certs/leaf/cso
-      private_key_password: "123456"
-    connections: {}
+  # WhiteBeet ISO15118 Charger - Uses WhiteBeet's internal V2G stack
+  whitebeet_charger:
+    module: WhiteBeetCharger
+    config_implementation:
+      charger:
+        device: eth0
+        whitebeet_mac: "c4:93:00:34:a4:e2"
+        payment_enable_eim: true
+        payment_enable_contract: false
+        ac_nominal_voltage: 230
+        free_service: true
 
   # WhiteBeet SLAC Module - Establishes PLC data link
   whitebeet_slac:
