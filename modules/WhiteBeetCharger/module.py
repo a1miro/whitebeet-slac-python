@@ -122,17 +122,19 @@ class WhiteBeetChargerModule(Module):
             self.whitebeet.v2gEvseStartListen()
             
             while not self.terminate.is_set():
-                # Poll for V2G events/messages from WhiteBeet
-                # The WhiteBeet firmware handles the ISO15118 protocol
-                # We just need to bridge events to EVerest
-                
-                # In a full implementation, you would:
-                # 1. Poll WhiteBeet for session events
-                # 2. Publish events to EVerest via module_ref.publish_variable()
-                # 3. Handle authorization requests
-                # 4. Start/stop charging based on protocol state
-                
-                time.sleep(0.1)
+                # Poll for V2G notification messages from WhiteBeet firmware
+                try:
+                    sub_id, payload = self.whitebeet.v2gEvseReceiveRequestSilent()
+                    
+                    if sub_id is not None:
+                        log.info(f"Received V2G notification: sub_id=0x{sub_id:02X}, payload_len={len(payload) if payload else 0}")
+                        
+                        # TODO: Parse notification and bridge to EVerest
+                        # For now, just log that we're receiving messages
+                        
+                except Exception as e:
+                    log.error(f"Error receiving V2G message: {e}")
+                    time.sleep(0.1)
                 
         except Exception as e:
             log.error(f"V2G worker error: {e}")
@@ -146,6 +148,10 @@ class WhiteBeetChargerModule(Module):
         
         log.info(f"Authorization response: {authorization_status}")
         
+        if self.whitebeet is None:
+            log.warning("WhiteBeet not initialized yet, skipping authorization response")
+            return
+        
         # Send authorization status to WhiteBeet
         status_code = 0 if authorization_status == "Accepted" else 1
         self.whitebeet.v2gEvseSetAuthorizationStatus(status_code)
@@ -156,6 +162,10 @@ class WhiteBeetChargerModule(Module):
         allow_power_on = args.get("allow_power_on", True)
         log.info(f"AC contactor closed: allow_power_on={allow_power_on}")
         
+        if self.whitebeet is None:
+            log.warning("WhiteBeet not initialized yet, skipping contactor closed")
+            return
+        
         if allow_power_on and self.authorization_received:
             log.info("Starting charging")
             self.whitebeet.v2gEvseStartCharging()
@@ -164,6 +174,11 @@ class WhiteBeetChargerModule(Module):
     def handle_stop_charging(self, args):
         """Stop charging session."""
         log.info("Stopping charging")
+        
+        if self.whitebeet is None:
+            log.warning("WhiteBeet not initialized yet, skipping stop charging")
+            return
+        
         self.whitebeet.v2gEvseStopCharging()
         self.charging_started = False
     
@@ -171,6 +186,10 @@ class WhiteBeetChargerModule(Module):
         """Update maximum AC current limit."""
         max_current = args.get("max_current", 32)
         log.info(f"Updating AC max current to {max_current}A")
+        
+        if self.whitebeet is None:
+            log.warning("WhiteBeet not initialized yet, will use default current")
+            return
         
         # Update AC charging parameters
         ac_params = {
@@ -185,10 +204,114 @@ class WhiteBeetChargerModule(Module):
         # WhiteBeet handles this internally
         return {}
     
-    def handle_certificate_response(self, args):
-        """Handle certificate response (for PnC)."""
-        log.info("Certificate response")
-        # WhiteBeet handles this internally
+    def handle_setup(self, args):
+        """Initial setup of the charger."""
+        log.info("Setup called")
+        return {}
+    
+    def handle_set_charging_parameters(self, args):
+        """Set charging parameters."""
+        log.info("Set charging parameters")
+        return {}
+    
+    def handle_bpt_setup(self, args):
+        """Bidirectional power transfer setup."""
+        log.info("BPT setup")
+        return {}
+    
+    def handle_set_powersupply_capabilities(self, args):
+        """Set power supply capabilities."""
+        log.info("Set powersupply capabilities")
+        return {}
+    
+    def handle_dlink_ready(self, args):
+        """Data link ready signal from SLAC."""
+        log.info(f"Data link ready: {args.get('value', False)}")
+        return {}
+    
+    def handle_cable_check_finished(self, args):
+        """Cable check finished."""
+        log.info(f"Cable check finished: {args.get('status', False)}")
+        return {}
+    
+    def handle_receipt_is_required(self, args):
+        """Receipt is required."""
+        log.info(f"Receipt required: {args.get('receipt_required', False)}")
+        return {}
+    
+    def handle_pause_charging(self, args):
+        """Pause charging."""
+        log.info(f"Pause charging: {args.get('pause', False)}")
+        return {}
+    
+    def handle_no_energy_pause_charging(self, args):
+        """No energy pause charging."""
+        log.info(f"No energy pause: {args.get('mode', 'unknown')}")
+        return {}
+    
+    def handle_update_energy_transfer_modes(self, args):
+        """Update energy transfer modes."""
+        log.info("Update energy transfer modes")
+        return {}
+    
+    def handle_update_ac_parameters(self, args):
+        """Update AC parameters."""
+        log.info("Update AC parameters")
+        return {}
+    
+    def handle_update_ac_maximum_limits(self, args):
+        """Update AC maximum limits."""
+        log.info("Update AC maximum limits")
+        return {}
+    
+    def handle_update_ac_minimum_limits(self, args):
+        """Update AC minimum limits."""
+        log.info("Update AC minimum limits")
+        return {}
+    
+    def handle_update_ac_target_values(self, args):
+        """Update AC target values."""
+        log.info("Update AC target values")
+        return {}
+    
+    def handle_update_ac_present_power(self, args):
+        """Update AC present power."""
+        log.info("Update AC present power")
+        return {}
+    
+    def handle_update_dc_maximum_limits(self, args):
+        """Update DC maximum limits."""
+        log.info("Update DC maximum limits")
+        return {}
+    
+    def handle_update_dc_minimum_limits(self, args):
+        """Update DC minimum limits."""
+        log.info("Update DC minimum limits")
+        return {}
+    
+    def handle_update_dc_present_values(self, args):
+        """Update DC present values."""
+        log.info("Update DC present values")
+        return {}
+    
+    def handle_update_isolation_status(self, args):
+        """Update isolation status."""
+        log.info("Update isolation status")
+        return {}
+    
+    def handle_update_meter_info(self, args):
+        """Update meter info."""
+        log.info("Update meter info")
+        return {}
+    
+    def handle_send_error(self, args):
+        """Send error to EV."""
+        log.info(f"Send error: {args}")
+        return {}
+    
+    def handle_reset_error(self, args):
+        """Reset error."""
+        log.info("Reset error")
         return {}
 
 
@@ -238,21 +361,105 @@ def main():
     def handle_session_setup(args):
         return module.handle_session_setup(args)
     
-    def handle_certificate_response(args):
-        return module.handle_certificate_response(args)
+    def handle_setup(args):
+        return module.handle_setup(args)
     
+    def handle_set_charging_parameters(args):
+        return module.handle_set_charging_parameters(args)
+    
+    def handle_bpt_setup(args):
+        return module.handle_bpt_setup(args)
+    
+    def handle_set_powersupply_capabilities(args):
+        return module.handle_set_powersupply_capabilities(args)
+    
+    def handle_dlink_ready(args):
+        return module.handle_dlink_ready(args)
+    
+    def handle_cable_check_finished(args):
+        return module.handle_cable_check_finished(args)
+    
+    def handle_receipt_is_required(args):
+        return module.handle_receipt_is_required(args)
+    
+    def handle_pause_charging(args):
+        return module.handle_pause_charging(args)
+    
+    def handle_no_energy_pause_charging(args):
+        return module.handle_no_energy_pause_charging(args)
+    
+    def handle_update_energy_transfer_modes(args):
+        return module.handle_update_energy_transfer_modes(args)
+    
+    def handle_update_ac_parameters(args):
+        return module.handle_update_ac_parameters(args)
+    
+    def handle_update_ac_maximum_limits(args):
+        return module.handle_update_ac_maximum_limits(args)
+    
+    def handle_update_ac_minimum_limits(args):
+        return module.handle_update_ac_minimum_limits(args)
+    
+    def handle_update_ac_target_values(args):
+        return module.handle_update_ac_target_values(args)
+    
+    def handle_update_ac_present_power(args):
+        return module.handle_update_ac_present_power(args)
+    
+    def handle_update_dc_maximum_limits(args):
+        return module.handle_update_dc_maximum_limits(args)
+    
+    def handle_update_dc_minimum_limits(args):
+        return module.handle_update_dc_minimum_limits(args)
+    
+    def handle_update_dc_present_values(args):
+        return module.handle_update_dc_present_values(args)
+    
+    def handle_update_isolation_status(args):
+        return module.handle_update_isolation_status(args)
+    
+    def handle_update_meter_info(args):
+        return module.handle_update_meter_info(args)
+    
+    def handle_send_error(args):
+        return module.handle_send_error(args)
+    
+    def handle_reset_error(args):
+        return module.handle_reset_error(args)
+    
+    module.implement_command("charger", "setup", handle_setup)
+    module.implement_command("charger", "set_charging_parameters", handle_set_charging_parameters)
+    module.implement_command("charger", "session_setup", handle_session_setup)
+    module.implement_command("charger", "bpt_setup", handle_bpt_setup)
+    module.implement_command("charger", "set_powersupply_capabilities", handle_set_powersupply_capabilities)
     module.implement_command("charger", "authorization_response", handle_authorization_response)
     module.implement_command("charger", "ac_contactor_closed", handle_ac_contactor_closed)
+    module.implement_command("charger", "dlink_ready", handle_dlink_ready)
+    module.implement_command("charger", "cable_check_finished", handle_cable_check_finished)
+    module.implement_command("charger", "receipt_is_required", handle_receipt_is_required)
     module.implement_command("charger", "stop_charging", handle_stop_charging)
+    module.implement_command("charger", "pause_charging", handle_pause_charging)
+    module.implement_command("charger", "no_energy_pause_charging", handle_no_energy_pause_charging)
+    module.implement_command("charger", "update_energy_transfer_modes", handle_update_energy_transfer_modes)
     module.implement_command("charger", "update_ac_max_current", handle_update_ac_max_current)
-    module.implement_command("charger", "session_setup", handle_session_setup)
-    module.implement_command("charger", "certificate_response", handle_certificate_response)
+    module.implement_command("charger", "update_ac_parameters", handle_update_ac_parameters)
+    module.implement_command("charger", "update_ac_maximum_limits", handle_update_ac_maximum_limits)
+    module.implement_command("charger", "update_ac_minimum_limits", handle_update_ac_minimum_limits)
+    module.implement_command("charger", "update_ac_target_values", handle_update_ac_target_values)
+    module.implement_command("charger", "update_ac_present_power", handle_update_ac_present_power)
+    module.implement_command("charger", "update_dc_maximum_limits", handle_update_dc_maximum_limits)
+    module.implement_command("charger", "update_dc_minimum_limits", handle_update_dc_minimum_limits)
+    module.implement_command("charger", "update_dc_present_values", handle_update_dc_present_values)
+    module.implement_command("charger", "update_isolation_status", handle_update_isolation_status)
+    module.implement_command("charger", "update_meter_info", handle_update_meter_info)
+    module.implement_command("charger", "send_error", handle_send_error)
+    module.implement_command("charger", "reset_error", handle_reset_error)
+    
+    # Initialize module first (before signaling ready)
+    module.initialize()
     
     # Signal that we're ready
     module.init_done()
-    
-    # Initialize module
-    module.initialize()
     
     # Keep the module running
     running = [True]

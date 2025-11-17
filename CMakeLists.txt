@@ -27,6 +27,7 @@ install(
     DIRECTORY 
         modules/WhiteBeetSlac
         modules/WhiteBeetCharger
+        modules/WhiteBeet
     DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/everest/modules
     FILES_MATCHING 
     PATTERN "*.py"
@@ -38,6 +39,7 @@ install(
     FILES 
         modules/WhiteBeetSlac/module.py
         modules/WhiteBeetCharger/module.py
+        modules/WhiteBeet/module.py
     DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/everest/modules/WhiteBeetSlac
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
@@ -45,6 +47,12 @@ install(
 install(
     FILES modules/WhiteBeetCharger/module.py
     DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/everest/modules/WhiteBeetCharger
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+)
+
+install(
+    FILES modules/WhiteBeet/module.py
+    DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/everest/modules/WhiteBeet
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
 
@@ -56,6 +64,7 @@ install(
         config/config-debug-auto.yaml
         config/config-standalone-test.yaml
         config/config-with-evse-sim.yaml
+        config/config-whitebeet-combined.yaml
     DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/everest
 )
 

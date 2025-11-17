@@ -91,9 +91,9 @@ active_modules:
       slac:
         - implementation_id: main
           module_id: whitebeet_slac
-      hlc:
-        - implementation_id: charger
-          module_id: whitebeet_charger
+      # hlc:
+      #   - implementation_id: charger
+      #     module_id: whitebeet_charger
       powermeter_grid_side:
         - implementation_id: powermeter
           module_id: yeti_simulator
@@ -101,17 +101,19 @@ active_modules:
         - implementation_id: connector_lock
           module_id: yeti_simulator
 
-  # WhiteBeet ISO15118 Charger - Uses WhiteBeet's internal V2G stack
-  whitebeet_charger:
-    module: WhiteBeetCharger
-    config_implementation:
-      charger:
-        device: eth0
-        whitebeet_mac: "c4:93:00:34:a4:e2"
-        payment_enable_eim: true
-        payment_enable_contract: false
-        ac_nominal_voltage: 230
-        free_service: true
+  # WhiteBeet ISO15118 Charger - DISABLED: Can't run simultaneously with WhiteBeetSlac
+  # The FreeV2G Whitebeet class uses multiprocessing and only supports one instance
+  # TODO: Merge SLAC and V2G into a single module
+  # whitebeet_charger:
+  #   module: WhiteBeetCharger
+  #   config_implementation:
+  #     charger:
+  #       device: eth0
+  #       whitebeet_mac: "c4:93:00:34:a4:e2"
+  #       payment_enable_eim: true
+  #       payment_enable_contract: false
+  #       ac_nominal_voltage: 230
+  #       free_service: true
 
   # WhiteBeet SLAC Module - Establishes PLC data link
   whitebeet_slac:

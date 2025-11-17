@@ -1,0 +1,79 @@
+active_modules:
+  evse_manager:
+  auth:
+  whitebeet:  # Combined SLAC + Charger module
+  yeti_simulator:
+
+evse_manager:
+  module: EvseManager
+  config_module:
+    # General EVSE settings
+    connector_id: 1
+    evse_id: DEVSE001
+    
+    # Charging configuration
+    charge_mode: AC
+    ac_hlc_enabled: true
+    ac_hlc_use_5percent: true
+    ac_enforce_hlc: true
+    has_ventilation: true
+    
+    # Session logging
+    session_logging: true
+    session_logging_path: /var/logs/everest
+    session_logging_xml: true
+    
+    # Free service for testing
+    disable_authentication: true
+    
+  connections:
+    bsp:
+      - implementation_id: board_support
+        module_id: yeti_simulator
+    slac:
+      - implementation_id: slac
+        module_id: whitebeet
+    hlc:
+      - implementation_id: charger
+        module_id: whitebeet
+    powermeter_grid_side:
+      - implementation_id: powermeter
+        module_id: yeti_simulator
+    connector_lock:
+      - implementation_id: connector_lock
+        module_id: yeti_simulator
+
+# Authentication module
+auth:
+  module: Auth
+  connections:
+    evse_manager:
+      - implementation_id: auth
+        module_id: evse_manager
+    token_provider:
+      - implementation_id: auth
+        module_id: evse_manager
+
+# WhiteBeet Combined Module - Provides both SLAC and ISO15118_charger
+whitebeet:
+  module: WhiteBeet
+  config_implementation:
+    slac:
+      device: eth0
+      whitebeet_mac: "c4:93:00:34:a4:e2"
+      slac_timeout_ms: 50000
+      publish_mac_on_match_cnf: true
+    charger:
+      payment_enable_eim: true
+      payment_enable_contract: false
+      ac_nominal_voltage: 230
+      free_service: true
+
+# Yeti Simulator - Simulates board support (CP states, relays, etc)
+yeti_simulator:
+  module: YetiSimulator
+  config_module:
+    connector_id: 1
+  connections: {}
+
+settings: {}
