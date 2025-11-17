@@ -87,9 +87,16 @@ class WhiteBeetModule(Module):
         """Initialize the WhiteBeet hardware."""
         log.info(f"WhiteBeet module initializing (device: {self.device}, mac: {self.whitebeet_mac})")
         
-        # Connect to WhiteBeet (single instance for both SLAC and V2G)
-        self.whitebeet = Whitebeet("ETH", self.device, self.whitebeet_mac)
-        log.info(f"WhiteBeet firmware version: {self.whitebeet.version}")
+        try:
+            # Connect to WhiteBeet (single instance for both SLAC and V2G)
+            log.info("Creating WhiteBeet instance...")
+            self.whitebeet = Whitebeet("ETH", self.device, self.whitebeet_mac)
+            log.info(f"WhiteBeet firmware version: {self.whitebeet.version}")
+        except Exception as e:
+            log.error(f"Failed to create WhiteBeet instance: {e}")
+            log.error("This may indicate another WhiteBeet instance is already running")
+            log.error("Try stopping all manager processes and retry")
+            raise
         
         # Initialize Control Pilot for EVSE mode
         log.info("Initializing Control Pilot in EVSE mode")
@@ -108,33 +115,35 @@ class WhiteBeetModule(Module):
         
         # Configure EVSE V2G parameters
         evse_config = {
-            "evseid": bytes.fromhex(self.whitebeet_mac.replace(":", "")),
-            "protocol_count": 1,
-            "protocols": [1],  # ISO15118-2
-            "payment_method_count": 2 if self.payment_enable_contract else 1,
-            "payment_method": [0, 1] if self.payment_enable_contract else [0],  # 0=EIM, 1=Contract
-            "energy_transfer_mode_count": 1,
-            "energy_transfer_mode": [0],  # AC single phase
-            "free_service": 1 if self.free_service else 0,
+            "evse_id_DIN": "49A80737A45678",  # DIN SPEC 91286 EVSE ID
+            "evse_id_ISO": "DE*PNX*E1234567*1",  # ISO 15118 EVSE ID
+            "protocol": [1],  # ISO15118-2
+            "payment_method": [0, 1] if self.payment_enable_contract else [0],  # 0=EIM, 1=PnC
+            "certificate_installation_support": self.payment_enable_contract,
+            "certificate_update_support": self.payment_enable_contract,
+            "energy_transfer_mode": [0],  # AC single phase (0=AC_single_phase_core)
         }
         log.info("Setting EVSE V2G configuration")
         self.whitebeet.v2gEvseSetConfiguration(evse_config)
         
-        # Set AC charging parameters
+        # Set AC charging parameters for EVSE
         ac_params = {
-            "nominal_voltage": self.ac_nominal_voltage,
+            "rcd_status": False,  # RCD (Residual Current Device) status
+            "nominal_voltage": int(self.ac_nominal_voltage),
             "max_current": 32,
         }
         log.info(f"Setting AC charging parameters: {ac_params}")
-        self.whitebeet.v2gSetACChargingParameters(ac_params)
+        self.whitebeet.v2gEvseSetAcChargingParameters(ac_params)
         
         # Configure SDP (Service Discovery Protocol)
         sdp_config = {
-            "port": 15118,
-            "security": 0,  # 0=TLS optional
+            "allow_unsecure": True,   # Allow connections without TLS
+            "unsecure_port": 49152,   # Dynamic port for internal communication (49152-65535 range)
+            #"allow_secure": False,    # Disable TLS
+            #"secure_port": 49152      # Must be present and in valid range
         }
-        log.info("Setting SDP configuration")
-        self.whitebeet.v2gEvseSetSdpConfig(sdp_config)
+        #log.info("Setting SDP configuration")
+        #self.whitebeet.v2gEvseSetSdpConfig(sdp_config)
         
         # Publish initial SLAC state
         self.publish_variable("slac", "state", "UNMATCHED")
@@ -414,10 +423,10 @@ class WhiteBeetModule(Module):
             return
         
         ac_params = {
-            "nominal_voltage": self.ac_nominal_voltage,
+            "rcd_status": False,
             "max_current": max_current,
         }
-        self.whitebeet.v2gEvseUpdateACChargingParameters(ac_params)
+        self.whitebeet.v2gEvseUpdateAcChargingParameters(ac_params)
     
     def handle_update_ac_parameters(self, args):
         """Update AC parameters."""

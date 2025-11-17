@@ -87,8 +87,11 @@ class WhiteBeetChargerModule(Module):
         
         # Configure SDP (Service Discovery Protocol)
         sdp_config = {
-            "port": 15118,
-            "security": 0,  # 0=TLS optional, 1=TLS required, 2=No TLS
+            "allow_unsecure": True,   # Allow connections without TLS
+            "unsecure_port": 49153,   # Dynamic port for internal communication (49152-65535 range)
+            "allow_secure": True,    # No TLS for testing 
+            "secure_port": 49154,
+            "security": 0  # 0=TLS optional, 1=TLS required, 2=No TLS
         }
         log.info("Setting SDP configuration")
         self.whitebeet.v2gEvseSetSdpConfig(sdp_config)
