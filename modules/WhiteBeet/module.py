@@ -42,6 +42,110 @@ log.info(f"Using FreeV2G from: {FREEV2G_PATH}")
 
 
 class WhiteBeetModule(Module):
+        # V2G interface command handlers (FreeV2G EVSE structure)
+        def v2g_handle_session_started(self, args):
+            log.info("V2G: Session started")
+            # Parse and handle session started, e.g. protocol, session_id, evcc_id
+            return {}
+
+        def v2g_handle_payment_selected(self, args):
+            log.info("V2G: Payment selected")
+            # Parse and handle payment selection
+            return {}
+
+        def v2g_handle_request_authorization(self, args):
+            log.info("V2G: Request authorization")
+            # Handle authorization request, set status
+            return {}
+
+        def v2g_handle_energy_transfer_mode_selected(self, args):
+            log.info("V2G: Energy transfer mode selected")
+            # Handle energy transfer mode selection
+            return {}
+
+        def v2g_handle_request_schedules(self, args):
+            log.info("V2G: Request schedules")
+            # Handle schedule request
+            return {}
+
+        def v2g_handle_dc_charge_parameters_changed(self, args):
+            log.info("V2G: DC charge parameters changed")
+            # Handle DC charge parameters
+            return {}
+
+        def v2g_handle_ac_charge_parameters_changed(self, args):
+            log.info("V2G: AC charge parameters changed")
+            # Handle AC charge parameters
+            return {}
+
+        def v2g_handle_request_cable_check(self, args):
+            log.info("V2G: Request cable check")
+            # Handle cable check request
+            return {}
+
+        def v2g_handle_pre_charge_started(self, args):
+            log.info("V2G: Pre charge started")
+            # Handle pre charge started
+            return {}
+
+        def v2g_handle_request_start_charging(self, args):
+            log.info("V2G: Start charging requested")
+            # Handle start charging request
+            return {}
+
+        def v2g_handle_request_stop_charging(self, args):
+            log.info("V2G: Stop charging requested")
+            # Handle stop charging request
+            return {}
+
+        def v2g_handle_welding_detection_started(self, args):
+            log.info("V2G: Welding detection started")
+            # Handle welding detection
+            return {}
+
+        def v2g_handle_session_stopped(self, args):
+            log.info("V2G: Session stopped")
+            # Handle session stopped
+            return {}
+
+        def v2g_handle_session_error(self, args):
+            log.info("V2G: Session error")
+            # Handle session error
+            return {}
+
+        def v2g_handle_certificate_installation_requested(self, args):
+            log.info("V2G: Certificate installation requested")
+            # Handle certificate installation request
+            return {}
+
+        def v2g_handle_certificate_update_requested(self, args):
+            log.info("V2G: Certificate update requested")
+            # Handle certificate update request
+            return {}
+
+        def v2g_handle_metering_receipt_status(self, args):
+            log.info("V2G: Metering receipt status")
+            # Handle metering receipt status
+            return {}
+        # ...existing code...
+        # Register V2G interface commands after module instantiation
+        module.implement_command("v2g", "session_started", lambda args: module.v2g_handle_session_started(args))
+        module.implement_command("v2g", "payment_selected", lambda args: module.v2g_handle_payment_selected(args))
+        module.implement_command("v2g", "request_authorization", lambda args: module.v2g_handle_request_authorization(args))
+        module.implement_command("v2g", "energy_transfer_mode_selected", lambda args: module.v2g_handle_energy_transfer_mode_selected(args))
+        module.implement_command("v2g", "request_schedules", lambda args: module.v2g_handle_request_schedules(args))
+        module.implement_command("v2g", "dc_charge_parameters_changed", lambda args: module.v2g_handle_dc_charge_parameters_changed(args))
+        module.implement_command("v2g", "ac_charge_parameters_changed", lambda args: module.v2g_handle_ac_charge_parameters_changed(args))
+        module.implement_command("v2g", "request_cable_check", lambda args: module.v2g_handle_request_cable_check(args))
+        module.implement_command("v2g", "pre_charge_started", lambda args: module.v2g_handle_pre_charge_started(args))
+        module.implement_command("v2g", "request_start_charging", lambda args: module.v2g_handle_request_start_charging(args))
+        module.implement_command("v2g", "request_stop_charging", lambda args: module.v2g_handle_request_stop_charging(args))
+        module.implement_command("v2g", "welding_detection_started", lambda args: module.v2g_handle_welding_detection_started(args))
+        module.implement_command("v2g", "session_stopped", lambda args: module.v2g_handle_session_stopped(args))
+        module.implement_command("v2g", "session_error", lambda args: module.v2g_handle_session_error(args))
+        module.implement_command("v2g", "certificate_installation_requested", lambda args: module.v2g_handle_certificate_installation_requested(args))
+        module.implement_command("v2g", "certificate_update_requested", lambda args: module.v2g_handle_certificate_update_requested(args))
+        module.implement_command("v2g", "metering_receipt_status", lambda args: module.v2g_handle_metering_receipt_status(args))
     """
     Combined EVerest module for WhiteBeet SLAC and ISO15118 Charger.
     
@@ -152,149 +256,7 @@ class WhiteBeetModule(Module):
         self.slac_thread = Thread(target=self._slac_worker, daemon=True)
         self.slac_thread.start()
         
-        self.v2g_thread = Thread(target=self._v2g_worker, daemon=True)
-        self.v2g_thread.start()
-        
-        log.info("WhiteBeet module ready (SLAC + V2G)")
-    
-    def cleanup(self):
-        """Cleanup resources."""
-        self.terminate.set()
-        
-        if self.slac_thread:
-            self.slac_thread.join(timeout=2.0)
-        if self.v2g_thread:
-            self.v2g_thread.join(timeout=2.0)
-            
-        if self.whitebeet:
-            try:
-                self.whitebeet.controlPilotStop()
-                self.whitebeet.slacStop()
-                log.info("WhiteBeet module stopped")
-            except Exception as e:
-                log.error(f"Error during cleanup: {e}")
-    
-    # =========================================================================
-    # SLAC Worker Thread
-    # =========================================================================
-    
-    def _slac_worker(self):
-        """Background thread that manages SLAC operations."""
-        try:
-            log.info("SLAC worker thread started")
-            
-            # Main SLAC loop
-            while not self.terminate.is_set():
-                if not self.slac_enabled or not self.in_bcd_state:
-                    # Not enabled or not in charging state - wait
-                    time.sleep(0.5)
-                    continue
-                
-                # Vehicle connected and SLAC enabled - start matching
-                log.info("Starting SLAC matching")
-                self.publish_variable("slac", "state", "MATCHING")
-                
-                # Set duty cycle to 5% to signal EV to start SLAC
-                self.whitebeet.controlPilotSetDutyCycle(5)
-                
-                # Start SLAC matching
-                self.whitebeet.slacStartMatching()
-                
-                # Wait for SLAC to complete (blocking call with timeout)
-                try:
-                    matched = self.whitebeet.slacMatched()
-                    
-                    if matched:
-                        log.info("✓ SLAC matching successful!")
-                        self.slac_matched = True
-                        self.publish_variable("slac", "state", "MATCHED")
-                        self.publish_variable("slac", "dlink_ready", True)
-                        
-                        # TODO: Extract and publish EV MAC if configured
-                        
-                        # Stay matched until we leave BCD state
-                        while self.in_bcd_state and not self.terminate.is_set():
-                            time.sleep(0.1)
-                        
-                        # Left BCD state - terminate link
-                        log.info("Left BCD state - terminating SLAC link")
-                        self.slac_matched = False
-                        self.publish_variable("slac", "state", "UNMATCHED")
-                        self.publish_variable("slac", "dlink_ready", False)
-                        
-                        # Reset duty cycle to 100%
-                        self.whitebeet.controlPilotSetDutyCycle(100)
-                    else:
-                        log.warning("SLAC matching failed or timed out")
-                        self.publish_variable("slac", "state", "UNMATCHED")
-                        time.sleep(2)
-                        
-                except Exception as e:
-                    log.error(f"SLAC matching error: {e}")
-                    self.publish_variable("slac", "state", "UNMATCHED")
-                    time.sleep(2)
-            
-        except Exception as e:
-            log.error(f"SLAC worker thread error: {e}", exc_info=True)
-    
-    # =========================================================================
-    # V2G Worker Thread
-    # =========================================================================
-    
-    def _v2g_worker(self):
-        """Background thread that handles V2G communication."""
-        try:
-            log.info("V2G worker thread started")
-            
-            # Main V2G loop
-            while not self.terminate.is_set():
-                # Only start V2G after SLAC is matched
-                if not self.slac_matched:
-                    time.sleep(0.5)
-                    continue
-                
-                # SLAC matched - start V2G listener
-                if not self.session_active:
-                    log.info("SLAC matched, starting V2G listener")
-                    self.whitebeet.v2gEvseStartListen()
-                    self.session_active = True
-                
-                # Poll for V2G notifications
-                # TODO: Implement notification handling
-                # notification = self.whitebeet.v2gEvseReceiveRequestSilent()
-                # if notification:
-                #     self._handle_v2g_notification(notification)
-                
-                time.sleep(0.1)
-            
-        except Exception as e:
-            log.error(f"V2G worker error: {e}", exc_info=True)
-    
-    # =========================================================================
-    # SLAC Interface Command Handlers
-    # =========================================================================
-    
-    def handle_slac_reset(self, enable):
-        """Reset SLAC module."""
-        log.info(f"SLAC reset requested (enable: {enable})")
-        self.slac_enabled = enable
-        
-        if enable:
-            self.publish_variable("slac", "state", "MATCHING")
-        else:
-            self.publish_variable("slac", "state", "UNMATCHED")
-            self.publish_variable("slac", "dlink_ready", False)
-    
-    def handle_slac_enter_bcd(self):
-        """Signal that Control Pilot entered state B/C/D (vehicle connected)."""
-        log.info("Entering BCD state (vehicle connected)")
-        self.in_bcd_state = True
-    
-    def handle_slac_leave_bcd(self):
-        """Signal that Control Pilot left state B/C/D (vehicle disconnected)."""
-        log.info("Leaving BCD state (vehicle disconnected)")
-        self.in_bcd_state = False
-        self.session_active = False
+        # ...existing code...
     
     def handle_slac_dlink_terminate(self):
         """Terminate the data link."""
@@ -316,63 +278,7 @@ class WhiteBeetModule(Module):
         log.info("Data link pause requested (power saving mode)")
         # WhiteBeet doesn't have a specific pause mode
     
-    # =========================================================================
-    # ISO15118_charger Interface Command Handlers
-    # =========================================================================
-    
-    def handle_setup(self, args):
-        """Initial setup of the charger."""
-        log.info("Charger setup called")
-        return {}
-    
-    def handle_set_charging_parameters(self, args):
-        """Set charging parameters."""
-        log.info("Set charging parameters")
-        return {}
-    
-    def handle_session_setup(self, args):
-        """Handle session setup request."""
-        log.info("Session setup")
-        return {}
-    
-    def handle_bpt_setup(self, args):
-        """Bidirectional power transfer setup."""
-        log.info("BPT setup")
-        return {}
-    
-    def handle_set_powersupply_capabilities(self, args):
-        """Set power supply capabilities."""
-        log.info("Set powersupply capabilities")
-        return {}
-    
-    def handle_authorization_response(self, args):
-        """Handle authorization response from Auth module."""
-        authorization_status = args.get("authorization_status", "Accepted")
-        log.info(f"Authorization response: {authorization_status}")
-        
-        if self.whitebeet is None:
-            log.warning("WhiteBeet not initialized yet")
-            return
-        
-        status_code = 0 if authorization_status == "Accepted" else 1
-        self.whitebeet.v2gEvseSetAuthorizationStatus(status_code)
-        self.authorization_received = True
-    
-    def handle_ac_contactor_closed(self, args):
-        """Called when AC contactor is closed."""
-        allow_power_on = args.get("allow_power_on", True)
-        log.info(f"AC contactor closed: allow_power_on={allow_power_on}")
-        
-        if self.whitebeet is None:
-            log.warning("WhiteBeet not initialized yet")
-            return
-        
-        if allow_power_on and self.authorization_received:
-            log.info("Starting charging")
-            self.whitebeet.v2gEvseStartCharging()
-            self.charging_started = True
-    
-    def handle_dlink_ready(self, args):
+    # ...existing code...
         """Data link ready signal from SLAC."""
         log.info(f"Data link ready: {args.get('value', False)}")
         return {}

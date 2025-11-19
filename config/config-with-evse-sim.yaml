@@ -68,8 +68,8 @@ active_modules:
         - implementation_id: main
           module_id: whitebeet_slac
       hlc:
-        - implementation_id: charger
-          module_id: iso15118_charger
+        - implementation_id: v2g
+          module_id: v2g
       powermeter_grid_side:
         - implementation_id: powermeter
           module_id: yeti_simulator
@@ -77,9 +77,9 @@ active_modules:
         - implementation_id: connector_lock
           module_id: yeti_simulator
 
-  # ISO15118 Charger - Handles high-level charging communication
-  iso15118_charger:
-    module: EvseV2G
+  # V2G - Handles high-level charging communication
+  v2g:
+    module: WhiteBeet
     config_module:
       device: eth0  # Same interface as SLAC
       supported_ISO15118_2: true

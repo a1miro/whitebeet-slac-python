@@ -1,8 +1,40 @@
 description: WhiteBeet SLAC and ISO15118 Charger - Combined module using WhiteBeet's internal SLAC and V2G
 provides:
-  slac:
-    interface: slac
-    description: ISO15118-3 SLAC implementation using WhiteBeet hardware
+  v2g:
+    interface: V2G
+    description: V2G interface using FreeV2G EVSE command structure
+    config:
+      evse_id_DIN:
+        description: EVSE ID (DIN format)
+        type: string
+        default: '+49*123*456*789'
+      evse_id_ISO:
+        description: EVSE ID (ISO format)
+        type: string
+        default: 'DE*A23*E45B*78C'
+      protocol:
+        description: Supported protocols
+        type: list
+        default: [0, 1]
+      payment_method:
+        description: Supported payment methods
+        type: list
+        default: [0]
+      energy_transfer_mode:
+        description: Supported energy transfer modes
+        type: list
+        default: [0, 1, 2, 3, 4, 5]
+      certificate_installation_support:
+        description: Certificate installation support
+        type: boolean
+        default: false
+      certificate_update_support:
+        description: Certificate update support
+        type: boolean
+        default: false
+  v2g:
+    interface: V2G
+    description: V2G implementation using FreeV2G
     config:
       device:
         description: Ethernet device used for communication with WhiteBeet (e.g., eth0)
@@ -12,18 +44,6 @@ provides:
         description: MAC address of the WhiteBeet device
         type: string
         default: "c4:93:00:34:a4:e4"
-      slac_timeout_ms:
-        description: SLAC matching timeout in milliseconds
-        type: integer
-        default: 50000
-      publish_mac_on_match_cnf:
-        description: Publish EV MAC address when SLAC matching is confirmed
-        type: boolean
-        default: true
-  charger:
-    interface: ISO15118_charger
-    description: ISO15118 charger implementation using WhiteBeet's internal V2G stack
-    config:
       payment_enable_eim:
         description: Enable External Identification Means (EIM) payment
         type: boolean

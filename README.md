@@ -191,7 +191,7 @@ evse_manager:
     slac:
       - module_id: whitebeet_slac
     hlc:  # ← This is required!
-      - module_id: iso15118_charger
+      - module_id: v2g
 ```
 
 ## Module Structure

@@ -34,7 +34,7 @@ evse_manager:
       - implementation_id: slac
         module_id: whitebeet
     hlc:
-      - implementation_id: charger
+      - implementation_id: v2g
         module_id: whitebeet
     powermeter_grid_side:
       - implementation_id: powermeter
@@ -54,7 +54,7 @@ auth:
       - implementation_id: auth
         module_id: evse_manager
 
-# WhiteBeet Combined Module - Provides both SLAC and ISO15118_charger
+# WhiteBeet Combined Module - Provides both SLAC and V2G
 whitebeet:
   module: WhiteBeet
   config_implementation:
@@ -63,11 +63,14 @@ whitebeet:
       whitebeet_mac: "c4:93:00:34:a4:e2"
       slac_timeout_ms: 50000
       publish_mac_on_match_cnf: true
-    charger:
-      payment_enable_eim: true
-      payment_enable_contract: false
-      ac_nominal_voltage: 230
-      free_service: true
+    v2g:
+      evse_id_DIN: '+49*123*456*789'
+      evse_id_ISO: 'DE*A23*E45B*78C'
+      protocol: [0, 1]
+      payment_method: [0]
+      energy_transfer_mode: [0, 1, 2, 3, 4, 5]
+      certificate_installation_support: false
+      certificate_update_support: false
 
 # Yeti Simulator - Simulates board support (CP states, relays, etc)
 yeti_simulator:
