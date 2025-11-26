@@ -1,5 +1,25 @@
 description: WhiteBeet SLAC and ISO15118 Charger - Combined module using WhiteBeet's internal SLAC and V2G
 provides:
+  slac:
+    interface: slac
+    description: ISO15118-3 SLAC implementation using WhiteBeet hardware
+    config:
+      device:
+        description: Ethernet device used for communication with WhiteBeet (e.g., eth0)
+        type: string
+        default: eth0
+      whitebeet_mac:
+        description: MAC address of the WhiteBeet device
+        type: string
+        default: "c4:93:00:34:a4:e4"
+      slac_timeout_ms:
+        description: SLAC matching timeout in milliseconds
+        type: integer
+        default: 50000
+      publish_mac_on_match_cnf:
+        description: Publish EV MAC address when SLAC matching is confirmed
+        type: boolean
+        default: true
   v2g:
     interface: V2G
     description: V2G interface using FreeV2G EVSE command structure
@@ -32,36 +52,3 @@ provides:
         description: Certificate update support
         type: boolean
         default: false
-  v2g:
-    interface: V2G
-    description: V2G implementation using FreeV2G
-    config:
-      device:
-        description: Ethernet device used for communication with WhiteBeet (e.g., eth0)
-        type: string
-        default: eth0
-      whitebeet_mac:
-        description: MAC address of the WhiteBeet device
-        type: string
-        default: "c4:93:00:34:a4:e4"
-      payment_enable_eim:
-        description: Enable External Identification Means (EIM) payment
-        type: boolean
-        default: true
-      payment_enable_contract:
-        description: Enable contract-based payment (PnC)
-        type: boolean
-        default: false
-      ac_nominal_voltage:
-        description: AC nominal voltage in volts
-        type: number
-        default: 230
-      free_service:
-        description: Offer free charging service
-        type: boolean
-        default: true
-metadata:
-  base_license: https://opensource.org/licenses/Apache-2.0
-  license: https://opensource.org/licenses/Apache-2.0
-  authors:
-    - Andrei Mironenko, Parallel Dynamic Ltd.

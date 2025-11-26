@@ -1,0 +1,127 @@
+# EVerest configuration for REDBEET Ethernet EVSE board with 2 CP lines
+active_modules:
+  # Authentication - Allows free charging for testing
+  token_provider:
+    module: DummyTokenProvider
+    config_implementation:
+      main:
+        timeout: 10
+        token: DEADBEEF
+    connections:
+      evse:
+        - implementation_id: evse
+          module_id: evse_manager
+
+  token_validator:
+    module: DummyTokenValidator
+    config_implementation:
+      main:
+        sleep: 0.25
+        validation_reason: Token seems valid
+        validation_result: Accepted
+    connections: {}
+
+  auth:
+    module: Auth
+    config_module:
+      connection_timeout: 10
+      selection_algorithm: FindFirst
+    connections:
+      evse_manager:
+        - implementation_id: evse
+          module_id: evse_manager
+      token_provider:
+        - implementation_id: main
+          module_id: token_provider
+      token_validator:
+        - implementation_id: main
+          module_id: token_validator
+
+  # Energy Manager - Required to allocate power to EVSE
+  energy_manager:
+    module: EnergyManager
+    config_module:
+      schedule_interval_duration: 60
+      schedule_total_duration: 600
+    connections:
+      energy_trunk:
+        - implementation_id: energy_grid
+          module_id: grid_connection_point
+
+  # Grid Connection Point - Simulates grid connection
+  grid_connection_point:
+    module: EnergyNode
+    config_module:
+      fuse_limit_A: 40
+      phase_count: 1  # Single phase to match EV request
+    connections:
+      energy_consumer:
+        - implementation_id: energy_grid
+          module_id: evse_manager
+
+  # EVSE Manager - Orchestrates the complete charging session
+  evse_manager:
+    module: EvseManager
+    config_module:
+      connector_id: 1
+      connector_type: sType2  # AC Type 2 socket
+      evse_id: DE*PNX*E1234567*1
+      evse_id_din: 49A80737A45678
+      charge_mode: AC
+      ac_nominal_voltage: 230
+      max_current_import_A: 32
+      max_current_export_A: 32
+      payment_enable_eim: true
+      payment_enable_contract: false
+      ac_hlc_enabled: true
+      ac_hlc_use_5percent: true
+      ac_enforce_hlc: true  # Enforce HLC for ISO15118
+      has_ventilation: true
+      session_logging: true
+      session_logging_path: /var/logs/everest
+      session_logging_xml: true
+      disable_authentication: true  # Free service for testing
+    connections:
+      bsp:
+        - implementation_id: board_support
+          module_id: yeti_simulator
+      slac:
+        - implementation_id: slac
+          module_id: whitebeet
+      hlc:
+        - implementation_id: v2g
+          module_id: whitebeet
+      powermeter_grid_side:
+        - implementation_id: powermeter
+          module_id: yeti_simulator
+      connector_lock:
+        - implementation_id: connector_lock
+          module_id: yeti_simulator
+
+  # WhiteBeet Combined Module - Provides both SLAC and V2G interfaces
+  # Uses a single WhiteBeet hardware instance to avoid multiprocessing conflicts
+  whitebeet:
+    module: WhiteBeet
+    config_implementation:
+      slac:
+        device: eth0
+        whitebeet_mac: "c4:93:00:34:a4:e2"
+        slac_timeout_ms: 50000
+        publish_mac_on_match_cnf: true
+      v2g:
+        evse_id_DIN: '+49*123*456*789'
+        evse_id_ISO: 'DE*A23*E45B*78C'
+        protocol: [0, 1]
+        payment_method: [0]
+        energy_transfer_mode: [0, 1, 2, 3, 4, 5]
+        certificate_installation_support: false
+        certificate_update_support: false
+
+  # Yeti Simulator - Simulates board support (CP states, relays, etc)
+  yeti_simulator:
+    module: YetiSimulator
+    config_module:
+      connector_id: 1
+    connections: {}
+
+settings: {}

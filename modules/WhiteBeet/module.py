@@ -42,120 +42,16 @@ log.info(f"Using FreeV2G from: {FREEV2G_PATH}")
 
 
 class WhiteBeetModule(Module):
-        # V2G interface command handlers (FreeV2G EVSE structure)
-        def v2g_handle_session_started(self, args):
-            log.info("V2G: Session started")
-            # Parse and handle session started, e.g. protocol, session_id, evcc_id
-            return {}
-
-        def v2g_handle_payment_selected(self, args):
-            log.info("V2G: Payment selected")
-            # Parse and handle payment selection
-            return {}
-
-        def v2g_handle_request_authorization(self, args):
-            log.info("V2G: Request authorization")
-            # Handle authorization request, set status
-            return {}
-
-        def v2g_handle_energy_transfer_mode_selected(self, args):
-            log.info("V2G: Energy transfer mode selected")
-            # Handle energy transfer mode selection
-            return {}
-
-        def v2g_handle_request_schedules(self, args):
-            log.info("V2G: Request schedules")
-            # Handle schedule request
-            return {}
-
-        def v2g_handle_dc_charge_parameters_changed(self, args):
-            log.info("V2G: DC charge parameters changed")
-            # Handle DC charge parameters
-            return {}
-
-        def v2g_handle_ac_charge_parameters_changed(self, args):
-            log.info("V2G: AC charge parameters changed")
-            # Handle AC charge parameters
-            return {}
-
-        def v2g_handle_request_cable_check(self, args):
-            log.info("V2G: Request cable check")
-            # Handle cable check request
-            return {}
-
-        def v2g_handle_pre_charge_started(self, args):
-            log.info("V2G: Pre charge started")
-            # Handle pre charge started
-            return {}
-
-        def v2g_handle_request_start_charging(self, args):
-            log.info("V2G: Start charging requested")
-            # Handle start charging request
-            return {}
-
-        def v2g_handle_request_stop_charging(self, args):
-            log.info("V2G: Stop charging requested")
-            # Handle stop charging request
-            return {}
-
-        def v2g_handle_welding_detection_started(self, args):
-            log.info("V2G: Welding detection started")
-            # Handle welding detection
-            return {}
-
-        def v2g_handle_session_stopped(self, args):
-            log.info("V2G: Session stopped")
-            # Handle session stopped
-            return {}
-
-        def v2g_handle_session_error(self, args):
-            log.info("V2G: Session error")
-            # Handle session error
-            return {}
-
-        def v2g_handle_certificate_installation_requested(self, args):
-            log.info("V2G: Certificate installation requested")
-            # Handle certificate installation request
-            return {}
-
-        def v2g_handle_certificate_update_requested(self, args):
-            log.info("V2G: Certificate update requested")
-            # Handle certificate update request
-            return {}
-
-        def v2g_handle_metering_receipt_status(self, args):
-            log.info("V2G: Metering receipt status")
-            # Handle metering receipt status
-            return {}
-        # ...existing code...
-        # Register V2G interface commands after module instantiation
-        module.implement_command("v2g", "session_started", lambda args: module.v2g_handle_session_started(args))
-        module.implement_command("v2g", "payment_selected", lambda args: module.v2g_handle_payment_selected(args))
-        module.implement_command("v2g", "request_authorization", lambda args: module.v2g_handle_request_authorization(args))
-        module.implement_command("v2g", "energy_transfer_mode_selected", lambda args: module.v2g_handle_energy_transfer_mode_selected(args))
-        module.implement_command("v2g", "request_schedules", lambda args: module.v2g_handle_request_schedules(args))
-        module.implement_command("v2g", "dc_charge_parameters_changed", lambda args: module.v2g_handle_dc_charge_parameters_changed(args))
-        module.implement_command("v2g", "ac_charge_parameters_changed", lambda args: module.v2g_handle_ac_charge_parameters_changed(args))
-        module.implement_command("v2g", "request_cable_check", lambda args: module.v2g_handle_request_cable_check(args))
-        module.implement_command("v2g", "pre_charge_started", lambda args: module.v2g_handle_pre_charge_started(args))
-        module.implement_command("v2g", "request_start_charging", lambda args: module.v2g_handle_request_start_charging(args))
-        module.implement_command("v2g", "request_stop_charging", lambda args: module.v2g_handle_request_stop_charging(args))
-        module.implement_command("v2g", "welding_detection_started", lambda args: module.v2g_handle_welding_detection_started(args))
-        module.implement_command("v2g", "session_stopped", lambda args: module.v2g_handle_session_stopped(args))
-        module.implement_command("v2g", "session_error", lambda args: module.v2g_handle_session_error(args))
-        module.implement_command("v2g", "certificate_installation_requested", lambda args: module.v2g_handle_certificate_installation_requested(args))
-        module.implement_command("v2g", "certificate_update_requested", lambda args: module.v2g_handle_certificate_update_requested(args))
-        module.implement_command("v2g", "metering_receipt_status", lambda args: module.v2g_handle_metering_receipt_status(args))
+            
     """
-    Combined EVerest module for WhiteBeet SLAC and ISO15118 Charger.
+    Combined EVerest module for WhiteBeet SLAC and V2G interface.
     
     This module provides both:
     - slac interface (ISO15118-3)
-    - ISO15118_charger interface (ISO15118-2 V2G)
+    - V2G interface (ISO15118-2)
     
     Using a single WhiteBeet hardware instance to avoid multiprocessing conflicts.
     """
-    
     def __init__(self, session: RuntimeSession):
         super().__init__(session)
         
@@ -247,15 +143,12 @@ class WhiteBeetModule(Module):
             #"secure_port": 49152      # Must be present and in valid range
         }
         #log.info("Setting SDP configuration")
-        #self.whitebeet.v2gEvseSetSdpConfig(sdp_config)
-        
+        self.whitebeet.v2gEvseSetSdpConfig(sdp_config)
         # Publish initial SLAC state
         self.publish_variable("slac", "state", "UNMATCHED")
-        
         # Start worker threads
         self.slac_thread = Thread(target=self._slac_worker, daemon=True)
         self.slac_thread.start()
-        
         # ...existing code...
     
     def handle_slac_dlink_terminate(self):
@@ -279,121 +172,117 @@ class WhiteBeetModule(Module):
         # WhiteBeet doesn't have a specific pause mode
     
     # ...existing code...
+    def handle_data_link_ready(self, args):
         """Data link ready signal from SLAC."""
         log.info(f"Data link ready: {args.get('value', False)}")
         return {}
-    
+
     def handle_cable_check_finished(self, args):
         """Cable check finished."""
         log.info(f"Cable check finished: {args.get('status', False)}")
         return {}
-    
+
     def handle_receipt_is_required(self, args):
         """Receipt is required."""
         log.info(f"Receipt required: {args.get('receipt_required', False)}")
         return {}
-    
+
     def handle_stop_charging(self, args):
         """Stop charging session."""
         log.info("Stopping charging")
-        
         if self.whitebeet is None:
             log.warning("WhiteBeet not initialized yet")
             return
-        
         self.whitebeet.v2gEvseStopCharging()
         self.charging_started = False
-    
+
     def handle_pause_charging(self, args):
         """Pause charging."""
         log.info(f"Pause charging: {args.get('pause', False)}")
         return {}
-    
+
     def handle_no_energy_pause_charging(self, args):
         """No energy pause charging."""
         log.info(f"No energy pause: {args.get('mode', 'unknown')}")
         return {}
-    
+
     def handle_update_energy_transfer_modes(self, args):
         """Update energy transfer modes."""
         log.info("Update energy transfer modes")
         return {}
-    
+
     def handle_update_ac_max_current(self, args):
         """Update maximum AC current limit."""
         max_current = args.get("max_current", 32)
         log.info(f"Updating AC max current to {max_current}A")
-        
         if self.whitebeet is None:
             log.warning("WhiteBeet not initialized yet")
             return
-        
         ac_params = {
             "rcd_status": False,
             "max_current": max_current,
         }
         self.whitebeet.v2gEvseUpdateAcChargingParameters(ac_params)
-    
+
     def handle_update_ac_parameters(self, args):
         """Update AC parameters."""
         log.info("Update AC parameters")
         return {}
-    
+
     def handle_update_ac_maximum_limits(self, args):
         """Update AC maximum limits."""
         log.info("Update AC maximum limits")
         return {}
-    
+
     def handle_update_ac_minimum_limits(self, args):
         """Update AC minimum limits."""
         log.info("Update AC minimum limits")
         return {}
-    
+
     def handle_update_ac_target_values(self, args):
         """Update AC target values."""
         log.info("Update AC target values")
         return {}
-    
+
     def handle_update_ac_present_power(self, args):
         """Update AC present power."""
         log.info("Update AC present power")
         return {}
-    
+
     def handle_update_dc_maximum_limits(self, args):
         """Update DC maximum limits."""
         log.info("Update DC maximum limits")
         return {}
-    
+
     def handle_update_dc_minimum_limits(self, args):
         """Update DC minimum limits."""
         log.info("Update DC minimum limits")
         return {}
-    
+
     def handle_update_dc_present_values(self, args):
         """Update DC present values."""
         log.info("Update DC present values")
         return {}
-    
+
     def handle_update_isolation_status(self, args):
         """Update isolation status."""
         log.info("Update isolation status")
         return {}
-    
+
     def handle_update_meter_info(self, args):
         """Update meter info."""
         log.info("Update meter info")
         return {}
-    
+
     def handle_send_error(self, args):
         """Send error to EV."""
         log.info(f"Send error: {args}")
         return {}
-    
+
     def handle_reset_error(self, args):
         """Reset error."""
         log.info("Reset error")
         return {}
-
 
 # ============================================================================
 # Module Entry Point
@@ -414,13 +303,13 @@ def main():
     # Access configuration parameters from both interfaces
     slac_config = setup.configs.implementations.get("slac", {})
     charger_config = setup.configs.implementations.get("charger", {})
-    
+
     # SLAC configuration
     module.device = slac_config.get("device", "eth0")
     module.whitebeet_mac = slac_config.get("whitebeet_mac", "c4:93:00:34:a4:e4")
     module.slac_timeout_ms = slac_config.get("slac_timeout_ms", 50000)
     module.publish_mac_on_match_cnf = slac_config.get("publish_mac_on_match_cnf", True)
-    
+
     # Charger configuration
     module.payment_enable_eim = charger_config.get("payment_enable_eim", True)
     module.payment_enable_contract = charger_config.get("payment_enable_contract", False)
@@ -445,63 +334,44 @@ def main():
                             lambda args: module.handle_slac_dlink_pause())
     
     # ========================================================================
-    # Register ISO15118_charger Interface Commands
+    # Register V2G interface commands after module instantiation
     # ========================================================================
-    
-    module.implement_command("charger", "setup", 
-                            lambda args: module.handle_setup(args))
-    module.implement_command("charger", "set_charging_parameters", 
-                            lambda args: module.handle_set_charging_parameters(args))
-    module.implement_command("charger", "session_setup", 
-                            lambda args: module.handle_session_setup(args))
-    module.implement_command("charger", "bpt_setup", 
-                            lambda args: module.handle_bpt_setup(args))
-    module.implement_command("charger", "set_powersupply_capabilities", 
-                            lambda args: module.handle_set_powersupply_capabilities(args))
-    module.implement_command("charger", "authorization_response", 
-                            lambda args: module.handle_authorization_response(args))
-    module.implement_command("charger", "ac_contactor_closed", 
-                            lambda args: module.handle_ac_contactor_closed(args))
-    module.implement_command("charger", "dlink_ready", 
-                            lambda args: module.handle_dlink_ready(args))
-    module.implement_command("charger", "cable_check_finished", 
-                            lambda args: module.handle_cable_check_finished(args))
-    module.implement_command("charger", "receipt_is_required", 
-                            lambda args: module.handle_receipt_is_required(args))
-    module.implement_command("charger", "stop_charging", 
-                            lambda args: module.handle_stop_charging(args))
-    module.implement_command("charger", "pause_charging", 
-                            lambda args: module.handle_pause_charging(args))
-    module.implement_command("charger", "no_energy_pause_charging", 
-                            lambda args: module.handle_no_energy_pause_charging(args))
-    module.implement_command("charger", "update_energy_transfer_modes", 
-                            lambda args: module.handle_update_energy_transfer_modes(args))
-    module.implement_command("charger", "update_ac_max_current", 
-                            lambda args: module.handle_update_ac_max_current(args))
-    module.implement_command("charger", "update_ac_parameters", 
-                            lambda args: module.handle_update_ac_parameters(args))
-    module.implement_command("charger", "update_ac_maximum_limits", 
-                            lambda args: module.handle_update_ac_maximum_limits(args))
-    module.implement_command("charger", "update_ac_minimum_limits", 
-                            lambda args: module.handle_update_ac_minimum_limits(args))
-    module.implement_command("charger", "update_ac_target_values", 
-                            lambda args: module.handle_update_ac_target_values(args))
-    module.implement_command("charger", "update_ac_present_power", 
-                            lambda args: module.handle_update_ac_present_power(args))
-    module.implement_command("charger", "update_dc_maximum_limits", 
-                            lambda args: module.handle_update_dc_maximum_limits(args))
-    module.implement_command("charger", "update_dc_minimum_limits", 
-                            lambda args: module.handle_dc_minimum_limits(args))
-    module.implement_command("charger", "update_dc_present_values", 
-                            lambda args: module.handle_update_dc_present_values(args))
-    module.implement_command("charger", "update_isolation_status", 
-                            lambda args: module.handle_update_isolation_status(args))
-    module.implement_command("charger", "update_meter_info", 
-                            lambda args: module.handle_update_meter_info(args))
-    module.implement_command("charger", "send_error", 
-                            lambda args: module.handle_send_error(args))
-    module.implement_command("charger", "reset_error", 
-                            lambda args: module.handle_reset_error(args))
+
+    module.implement_command(
+        "v2g", "session_started", lambda args: module.v2g_handle_session_started(args))
+    module.implement_command(
+        "v2g", "payment_selected", lambda args: module.v2g_handle_payment_selected(args))
+    module.implement_command("v2g", "request_authorization",
+                             lambda args: module.v2g_handle_request_authorization(args))
+    module.implement_command("v2g", "energy_transfer_mode_selected",
+                             lambda args: module.v2g_handle_energy_transfer_mode_selected(args))
+    module.implement_command(
+        "v2g", "request_schedules", lambda args: module.v2g_handle_request_schedules(args))
+    module.implement_command("v2g", "dc_charge_parameters_changed",
+                             lambda args: module.v2g_handle_dc_charge_parameters_changed(args))
+    module.implement_command("v2g", "ac_charge_parameters_changed",
+                             lambda args: module.v2g_handle_ac_charge_parameters_changed(args))
+    module.implement_command("v2g", "request_cable_check",
+                             lambda args: module.v2g_handle_request_cable_check(args))
+    module.implement_command(
+        "v2g", "pre_charge_started", lambda args: module.v2g_handle_pre_charge_started(args))
+    module.implement_command("v2g", "request_start_charging",
+                             lambda args: module.v2g_handle_request_start_charging(args))
+    module.implement_command("v2g", "request_stop_charging",
+                             lambda args: module.v2g_handle_request_stop_charging(args))
+    module.implement_command("v2g", "welding_detection_started",
+                             lambda args: module.v2g_handle_welding_detection_started(args))
+    module.implement_command(
+        "v2g", "session_stopped", lambda args: module.v2g_handle_session_stopped(args))
+    module.implement_command(
+        "v2g", "session_error", lambda args: module.v2g_handle_session_error(args))
+    module.implement_command("v2g", "certificate_installation_requested",
+                             lambda args: module.v2g_handle_certificate_installation_requested(args))
+    module.implement_command("v2g", "certificate_update_requested",
+                             lambda args: module.v2g_handle_certificate_update_requested(args))
+    module.implement_command("v2g", "metering_receipt_status",
+                             lambda args: module.v2g_handle_metering_receipt_status(args))
+
     
     # ========================================================================
     # Initialize and Run
